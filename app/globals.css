@@ -1,26 +1,277 @@
 @import "tailwindcss";
 
+/* ═══════════════════════════════════════════════════════════════════════
+   Jardim Digital — folha de tokens
+   Portada do protótipo em HTML puro. Duas dimensões independentes:
+     data-theme   escuro | claro
+     data-persona pro | caos     (caos ainda é só esqueleto de cor, de propósito)
+   E duas chaves de instrumentação:
+     data-eng     on | off       Modo Engenheiro — expõe o schema por trás da tela
+     data-vista   jardim | painel  jardim é quente e orgânico, painel é console
+   ═══════════════════════════════════════════════════════════════════════ */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --font-sans: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --font-mono: "Cascadia Code", "Cascadia Mono", Consolas, ui-monospace, monospace;
+
+  --r: 14px;
+  --maxw: 1080px;
+  --glow: none;
+  --grain-op: 0;
+  --speed: 0.22s;
+
+  /* maturidade da nota — o eixo do jardim */
+  --semente: #7FA86B;
+  --muda: #4E9A6E;
+  --perene: #2E7D6B;
 }
 
+/* escuro + profissional — "modo IDE" */
+html[data-theme="dark"][data-persona="pro"] {
+  --bg: #0B1220; --bg2: #0B1220;
+  --surface: #111C2E; --surface-2: #16233A;
+  --text: #E6EDF7; --muted: #8FA3BF;
+  --accent: #D9424A; --accent-soft: rgba(217, 66, 74, 0.14);
+  --border: rgba(255, 255, 255, 0.09);
+  --ok: #3FB950; --warn: #D29922; --erro: #F85149;
+}
+
+/* escuro + caos — PARADO: só o esqueleto. cursor custom, psicodelia e
+   animações entram depois, quando este modo virar sua própria fase. */
+html[data-theme="dark"][data-persona="caos"] {
+  --bg: #050814; --bg2: #0D0620;
+  --surface: #0C1330; --surface-2: #141B44;
+  --text: #F3F7FF; --muted: #94A6D4;
+  --accent: #FF2D55; --accent-soft: rgba(255, 45, 85, 0.16);
+  --border: rgba(255, 45, 85, 0.22);
+  --ok: #2BFFB0; --warn: #FFD028; --erro: #FF2D55;
+  --glow: 0 0 28px rgba(255, 45, 85, 0.35);
+  --grain-op: 0.05;
+  --speed: 0.14s;
+}
+
+/* claro + profissional — "modo documentação" */
+html[data-theme="light"][data-persona="pro"] {
+  --bg: #F6F7F9; --bg2: #F6F7F9;
+  --surface: #FFFFFF; --surface-2: #F1F3F7;
+  --text: #0F172A; --muted: #5A6A85;
+  --accent: #B93A38; --accent-soft: rgba(185, 58, 56, 0.09);
+  --border: rgba(15, 23, 42, 0.11);
+  --ok: #1A7F37; --warn: #9A6700; --erro: #CF222E;
+}
+
+html[data-theme="light"][data-persona="caos"] {
+  --bg: #FFF6F7; --bg2: #FDF2FF;
+  --surface: #FFFFFF; --surface-2: #FFF0F3;
+  --text: #170D22; --muted: #6A5478;
+  --accent: #E5194C; --accent-soft: rgba(229, 25, 76, 0.11);
+  --border: rgba(229, 25, 76, 0.24);
+  --ok: #0E8A5F; --warn: #B47500; --erro: #E5194C;
+  --glow: 0 0 20px rgba(229, 25, 76, 0.22);
+  --speed: 0.14s;
+}
+
+/* O painel é console de supervisão: mais denso, mais frio, sem gradiente quente.
+   Herda a paleta e aperta o raio. É classe num elemento, e não atributo no
+   <html>, porque assim a troca de visão não custa JavaScript nem renderização
+   dinâmica — a variável simplesmente cascateia pra dentro. */
+.painel-raiz {
+  --r: 8px;
+  --maxw: 1400px;
+}
+
+/* Expõe os tokens como utilitários Tailwind: bg-fundo, text-suave, border-linha… */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-fundo: var(--bg);
+  --color-fundo-2: var(--bg2);
+  --color-superficie: var(--surface);
+  --color-superficie-2: var(--surface-2);
+  --color-tinta: var(--text);
+  --color-suave: var(--muted);
+  --color-acento: var(--accent);
+  --color-acento-fraco: var(--accent-soft);
+  --color-linha: var(--border);
+  --color-ok: var(--ok);
+  --color-alerta: var(--warn);
+  --color-erro: var(--erro);
+  --color-semente: var(--semente);
+  --color-muda: var(--muda);
+  --color-perene: var(--perene);
+
+  --font-sans: var(--font-sans);
+  --font-serif: var(--font-serif);
+  --font-mono: var(--font-mono);
+
+  --radius-token: var(--r);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+/* ───────────────────────────── base ───────────────────────────── */
+
+* { box-sizing: border-box; }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  transition: background var(--speed) ease, color var(--speed) ease;
+}
+
+/* Auréola de fundo. Elemento próprio em vez de body::before: só o jardim a
+   renderiza, e o painel fica chapado sem precisar desfazer nada. */
+.aura {
+  position: fixed; inset: 0; z-index: -2; pointer-events: none;
+  background:
+    radial-gradient(900px 500px at 12% -8%, var(--accent-soft), transparent 60%),
+    radial-gradient(800px 480px at 88% 4%, rgba(90, 120, 255, 0.1), transparent 62%),
+    linear-gradient(160deg, var(--bg), var(--bg2));
+}
+
+body::after {
+  content: "";
+  position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  opacity: var(--grain-op);
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3'/></filter><rect width='120' height='120' filter='url(%23n)' opacity='.55'/></svg>");
+  transition: opacity var(--speed) ease;
+}
+
+a { color: inherit; }
+
+::selection { background: var(--accent); color: #fff; }
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ───────────────────── Modo Engenheiro ─────────────────────
+   O toggle "Campos" do protótipo, crescido. Desligado, some inteiro:
+   nenhum reflow, nenhum espaço reservado. Ligado, cada elemento
+   ganha a etiqueta da coluna que o alimenta. */
+
+[data-campo]::after {
+  content: attr(data-campo);
+  display: none;
+}
+html[data-eng="on"] [data-campo] {
+  position: relative;
+  outline: 1px dashed color-mix(in srgb, var(--accent) 45%, transparent);
+  outline-offset: 3px;
+  border-radius: 3px;
+}
+html[data-eng="on"] [data-campo]::after {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 5px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1.5;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  vertical-align: middle;
+  white-space: nowrap;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  border-radius: 999px;
+}
+/* blocos inteiros levam a etiqueta flutuando no canto, não inline */
+html[data-eng="on"] [data-campo][data-campo-bloco]::after {
+  position: absolute;
+  top: -9px; right: 8px;
+  margin: 0;
+  background: var(--bg);
+}
+
+.so-engenheiro { display: none; }
+html[data-eng="on"] .so-engenheiro { display: revert; }
+
+/* ───────────────────── texto de leitura ─────────────────────
+   Corpo de post em serifa: o jardim é pra ler devagar. */
+
+.prosa {
+  font-family: var(--font-serif);
+  font-size: 1.14rem;
+  line-height: 1.78;
+  color: color-mix(in srgb, var(--text) 92%, var(--muted));
+}
+.prosa > * + * { margin-top: 1.15em; }
+.prosa h2, .prosa h3 {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  margin-top: 2em;
+  color: var(--text);
+}
+.prosa h2 { font-size: 1.5rem; }
+.prosa h3 { font-size: 1.2rem; }
+.prosa a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+.prosa strong { color: var(--text); font-weight: 650; }
+.prosa code {
+  font-family: var(--font-mono);
+  font-size: 0.87em;
+  padding: 0.15em 0.4em;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+}
+.prosa pre {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  line-height: 1.6;
+  padding: 16px 18px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  overflow-x: auto;
+}
+.prosa pre code { padding: 0; background: none; border: none; }
+.prosa blockquote {
+  padding-left: 18px;
+  border-left: 3px solid var(--accent);
+  color: var(--muted);
+  font-style: italic;
+}
+.prosa ul, .prosa ol { padding-left: 1.4em; }
+.prosa li + li { margin-top: 0.4em; }
+.prosa hr { border: none; border-top: 1px solid var(--border); margin: 2.5em 0; }
+.prosa img { max-width: 100%; border-radius: var(--r); }
+.prosa table { width: 100%; border-collapse: collapse; font-family: var(--font-sans); font-size: 0.95rem; }
+.prosa th, .prosa td { padding: 8px 12px; border: 1px solid var(--border); text-align: left; }
+.prosa th { background: var(--surface-2); font-weight: 650; }
+
+/* ───────────────────── grafo de conexões ───────────────────── */
+
+.grafo-aresta {
+  stroke: var(--border);
+  stroke-width: 1;
+  fill: none;
+  transition: stroke var(--speed) ease, stroke-width var(--speed) ease;
+}
+.grafo-aresta[data-viva="1"] {
+  stroke: var(--accent);
+  stroke-width: 1.8;
+}
+.grafo-no circle { transition: r var(--speed) ease, fill var(--speed) ease; }
+.grafo-no text {
+  font-family: var(--font-sans);
+  font-size: 9.5px;
+  fill: var(--muted);
+  transition: fill var(--speed) ease;
+}
+.grafo-no[data-viva="1"] text { fill: var(--text); font-weight: 650; }
+.grafo-no[data-apagado="1"] { opacity: 0.28; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
 }

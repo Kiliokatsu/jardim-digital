@@ -60,6 +60,10 @@ checar '\-\-\-\-\-BEGIN [A-Z ]*PRIVATE KEY\-\-\-\-\-' "chave privada"
 checar 'postgres(ql)?://[^:[:space:]]+:[^@[:space:]]+@' "URL de banco com senha embutida"
 checar '(SERVICE_ROLE|SECRET|TOKEN|PASSWORD|PASSWD)[A-Z_]*[[:space:]]*=[[:space:]]*["'\'']?[A-Za-z0-9_-]{16,}' \
       "variável de segredo com valor preenchido"
+# e-mail corporativo é dado pessoal + identidade do empregador: já vazou duas
+# vezes antes do primeiro push (DEC-0003 e DEC-0004). Contato público do site
+# é o e-mail pessoal; o corporativo não tem motivo pra aparecer em código.
+checar '[A-Za-z0-9._%+-]+@artemec\.com\.br'           "e-mail corporativo da Artemec"
 
 # ---------------------------------------------------------------------------
 # Resultado
