@@ -1,6 +1,17 @@
 import type { Perfil, PerfilLink, Telemetria } from "@/lib/tipos";
 import { dataHora } from "@/lib/formato";
 
+/* A URL do link vem do banco. Só http/https/mailto viram href — um typo tipo
+   "javascript:" no Studio não pode virar código executável no clique. */
+function urlSegura(url: string): string | null {
+  try {
+    const analisada = new URL(url);
+    return ["http:", "https:", "mailto:"].includes(analisada.protocol) ? url : null;
+  } catch {
+    return null;
+  }
+}
+
 /* Rodapé em toda página com o nome completo — é uma das quatro mitigações da
    DEC-008: a marca é Kiliokatsu, mas o recrutador precisa cruzar o site com o
    LinkedIn sem esforço.
@@ -36,17 +47,21 @@ export function RodapePublico({
           <p className="text-sm text-suave">{perfil.titulo}</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          {links.map((l) => (
-            <a
-              key={l.id}
-              href={l.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="rounded-full border border-linha bg-superficie px-3.5 py-1.5 text-sm text-suave transition-colors hover:border-acento/50 hover:text-tinta"
-            >
-              {l.rotulo}
-            </a>
-          ))}
+          {links.map((l) => {
+            const href = urlSegura(l.url);
+            if (!href) return null;
+            return (
+              <a
+                key={l.id}
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-full border border-linha bg-superficie px-3.5 py-1.5 text-sm text-suave transition-colors hover:border-acento/50 hover:text-tinta"
+              >
+                {l.rotulo}
+              </a>
+            );
+          })}
           {perfil.email && (
             <a
               href={`mailto:${perfil.email}`}

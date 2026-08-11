@@ -84,16 +84,17 @@ export function Dragao() {
     const raiz = document.documentElement;
 
     // Celular não tem cursor para seguir; fingir que tem é pior que não ter.
-    // E quem pediu menos movimento não recebe dragão nenhum.
+    // Classe de dispositivo não muda em tempo de execução — pode sair cedo.
     const temCursorFino = window.matchMedia(
       "(hover: hover) and (pointer: fine)",
     ).matches;
-    const querMenosMovimento = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
-    if (!temCursorFino || querMenosMovimento) {
+    if (!temCursorFino) {
       return; // sai sem registrar nada: nem observador, nem listener
     }
+
+    // Reduced-motion MUDA em tempo de execução (o visitante liga no SO com a
+    // aba aberta) — então é MediaQueryList vigiada, não leitura única.
+    const mqMenosMovimento = window.matchMedia("(prefers-reduced-motion: reduce)");
 
     // ---- estado do laço (vive no escopo do efeito, morre no unmount) ----
     let larg = 0;
@@ -452,6 +453,8 @@ export function Dragao() {
 
     function liga() {
       if (rodando) return;
+      // o pedido de menos movimento vence a persona, sempre
+      if (mqMenosMovimento.matches) return;
       rodando = true;
       redimensiona();
       if (espinha.length === 0) iniciaEspinha();
@@ -494,10 +497,17 @@ export function Dragao() {
       attributeFilter: ["data-persona"],
     });
 
+    const aoMudarMovimento = () => {
+      if (mqMenosMovimento.matches) desliga();
+      else if (raiz.dataset.persona === "caos") liga();
+    };
+    mqMenosMovimento.addEventListener("change", aoMudarMovimento);
+
     if (raiz.dataset.persona === "caos") liga();
 
     return () => {
       observador.disconnect();
+      mqMenosMovimento.removeEventListener("change", aoMudarMovimento);
       window.removeEventListener("mousemove", aoMover);
       window.removeEventListener("resize", aoRedimensionar);
       desliga();

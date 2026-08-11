@@ -59,7 +59,9 @@ export default async function PaginaRegistro(props: PageProps<"/registro/[slug]"
 
   return (
     <>
-      <BarraProgresso />
+      {/* key por post: navegar anterior/próximo reconcilia esta página no mesmo
+          lugar da árvore, e sem remontar a barra mediria o artigo anterior */}
+      <BarraProgresso key={post.slug} />
 
       <div className="layout">
         <article className="corpo">
@@ -135,7 +137,7 @@ export default async function PaginaRegistro(props: PageProps<"/registro/[slug]"
           </div>
         </article>
 
-        {secoes.length > 0 && <IndiceLateral secoes={secoes} />}
+        {secoes.length > 0 && <IndiceLateral key={post.slug} secoes={secoes} />}
       </div>
     </>
   );
