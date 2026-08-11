@@ -1,12 +1,11 @@
 import { CabecalhoPublico } from "@/componentes/CabecalhoPublico";
 import { RodapePublico } from "@/componentes/RodapePublico";
-import { Dragao } from "@/componentes/caos/Dragao";
 import { Grao } from "@/componentes/caos/Grao";
 import { buscarPerfil, listarPerfilLinks, telemetria } from "@/lib/consultas";
 
-/* Casca da visão pública. O dragão e o granulado moram aqui — presentes em
-   toda página, mas inertes fora do modo caos (DEC-003-b: no modo normal o
-   laço de animação nem roda). */
+/* Casca da visão pública. O granulado do caos mora aqui — presente em toda
+   página, inerte fora do modo caos (DEC-003-b). O efeito especial do caos
+   (o dragão saiu — DEC-0008) entra quando as referências da DEC-004 chegarem. */
 
 export default async function LayoutJardim({ children }: { children: React.ReactNode }) {
   const [perfil, links, tele] = await Promise.all([
@@ -17,7 +16,6 @@ export default async function LayoutJardim({ children }: { children: React.React
 
   return (
     <>
-      <Dragao />
       <Grao />
       <CabecalhoPublico />
       <main className="mx-auto w-full max-w-[var(--maxw)] flex-1 px-6">{children}</main>

@@ -45,9 +45,9 @@ npm run testar-schema   # roda a migration num Postgres em memória e prova a RL
 
 - **Tema** `escuro | claro` — escuro é o padrão (direção visual A, "Terminal Noturno").
 - **Persona** `normal | caos` — mesma estrutura, camada de movimento (DEC-003-b). No
-  caos o acento esquenta, o granulado liga e o dragão segue o cursor (canvas 2D, zero
-  dependência). No normal, o laço de animação **nem roda**. `prefers-reduced-motion`
-  desliga tudo.
+  caos o acento esquenta, o brilho e o granulado ligam. O efeito especial do caos está
+  vago de propósito (DEC-0008) — entra quando as referências de animação da DEC-004
+  forem escolhidas. `prefers-reduced-motion` desliga tudo.
 - **Modo Engenheiro** `0 | 1` — expõe a instrumentação: fita de telemetria no rodapé e
   os metadados de cada cartão.
 

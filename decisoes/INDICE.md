@@ -9,6 +9,7 @@
 | [0005](0005-revisao-de-bancada-pre-deploy.md) | Revisão por bancada de quatro agentes antes do primeiro deploy real | 2026-08-11 | aceita | agentes (4 revisores) |
 | [0006](0006-adocao-do-pacote-dragao.md) | Reconstrução Kiliokatsu: adota o pacote prototipo-dragao como fonte de decisão | 2026-08-11 | aceita | claude |
 | [0007](0007-execucao-da-reconstrucao.md) | Execução da reconstrução: três camadas em paralelo, integradas num dia | 2026-08-11 | aceita | agentes (2) + claude |
+| [0008](0008-remocao-do-dragao.md) | Remover o dragão do modo caos; o efeito especial volta pela DEC-004 | 2026-08-11 | aceita | humano |
 
 ---
 

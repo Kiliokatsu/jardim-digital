@@ -241,20 +241,9 @@ html[data-engenheiro="1"] [data-campo][data-campo-bloco]::after {
 }
 
 /* ───────────────────── camada caos ─────────────────────
-   O dragão e o granulado existem SEMPRE no DOM; quem os liga é o
-   atributo. Desligados custam zero: opacity 0 e nenhum quadro rodando. */
-
-#dragao {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-html[data-persona="caos"] #dragao {
-  opacity: 1;
-}
+   O granulado existe SEMPRE no DOM; quem o liga é o atributo. Desligado
+   custa zero. O efeito especial do caos (o dragão saiu — DEC-0008) entra
+   quando as referências de animação da DEC-004 forem escolhidas. */
 
 .grao {
   position: fixed;
@@ -282,12 +271,6 @@ html[data-persona="caos"] .titulo-vivo em {
   text-shadow: 1.5px 0 rgba(0, 229, 255, 0.5), -1.5px 0 rgba(255, 45, 85, 0.5), var(--glow);
 }
 
-/* aparelho sem cursor não recebe dragão */
-@media (hover: none), (pointer: coarse) {
-  #dragao {
-    display: none !important;
-  }
-}
 
 /* ───────────────────── chaves do cabeçalho ───────────────────── */
 
@@ -1097,8 +1080,5 @@ html[data-tema="claro"] .shiki span {
   * {
     animation: none !important;
     transition: none !important;
-  }
-  #dragao {
-    display: none !important;
   }
 }
