@@ -7,6 +7,8 @@
 | [0003](0003-conexao-github-privado-primeiro.md) | Conectar ao GitHub como repositório privado primeiro, público só após revisão | 2026-08-11 | aceita | claude |
 | [0004](0004-nenhum-email-real-no-codigo.md) | Nenhum e-mail real chumbado em código versionado | 2026-08-11 | aceita | claude |
 | [0005](0005-revisao-de-bancada-pre-deploy.md) | Revisão por bancada de quatro agentes antes do primeiro deploy real | 2026-08-11 | aceita | agentes (4 revisores) |
+| [0006](0006-adocao-do-pacote-dragao.md) | Reconstrução Kiliokatsu: adota o pacote prototipo-dragao como fonte de decisão | 2026-08-11 | aceita | claude |
+| [0007](0007-execucao-da-reconstrucao.md) | Execução da reconstrução: três camadas em paralelo, integradas num dia | 2026-08-11 | aceita | agentes (2) + claude |
 
 ---
 

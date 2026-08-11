@@ -1,92 +1,74 @@
 /* Tipos do domínio. Espelham as colunas do Postgres (snake_case de propósito —
    o que vem do banco chega assim, e traduzir no meio do caminho só cria um lugar
-   a mais pra errar). Schema em supabase/schema.sql. */
+   a mais pra errar). Schema em supabase/migrations/0001_reconstrucao_v3.sql. */
 
-/** Onde o texto é publicado. Financeiro foi cortado: virou assunto dentro de tecnologia. */
-export type Portal = "tecnologia" | "pessoal";
-
-/** O eixo do jardim. Nota não nasce pronta — ela amadurece. */
-export type Maturidade = "semente" | "muda" | "perene";
-
-/** Gênero do texto. `incidente` carrega métricas próprias (tabela incidentes). */
-export type Genero = "registro" | "incidente" | "nota";
-
-/** O ciclo da fila de aprovação. Nada vira `publicado` sem passar por `aprovado`. */
-export type Estado =
-  | "rascunho"
-  | "em_revisao"
-  | "aprovado"
-  | "publicado"
-  | "rejeitado";
-
-/** De quem veio o texto. Rascunho de agente entra na fila igual, só marcado. */
-export type Autoria = "humano" | "agente";
+/** Os três portais do site. Profissional é currículo, não blog. */
+export type Portal = "profissional" | "tecnologia" | "pessoal";
 
 export type Post = {
   id: string;
   slug: string;
-  titulo: string;
-  resumo: string | null;
-  corpo_md: string;
+  idioma: string;
   portal: Portal;
-  genero: Genero;
-  maturidade: Maturidade;
-  estado: Estado;
-  autoria: Autoria;
-  /** Qual agente escreveu, quando autoria = 'agente'. */
-  agente: string | null;
-  /** Qual integração publicou, se a publicação foi automática. */
-  publicado_por: string | null;
-  tags: string[];
-  minutos_leitura: number;
-  aviso_indicacao: string | null;
+  titulo: string;
+  resumo: string;
+  corpo: string;
+  /** NULL = rascunho. Só chega ao público quando não-nulo e <= now() (RLS). */
   publicado_em: string | null;
   criado_em: string;
   atualizado_em: string;
-  /** Quantas vezes o texto foi revisado antes de subir. Aparece no Modo Engenheiro. */
-  revisoes: number;
+  /** DEC-013: o componente renderiza a linha de aviso de indicação a partir daqui. */
+  tem_indicacao: boolean;
+  /** Caminho DENTRO do balde 'capas', nunca a URL completa (DEC-019). */
+  capa_path: string | null;
+  capa_alt: string | null;
+  capa_credito: string | null;
+  /** Embutidas pelo join posts_etiquetas → etiquetas. Ausente quando a consulta não pediu. */
+  etiquetas?: Etiqueta[];
 };
 
-/** Métricas de post-mortem. Um incidente é um post com contabilidade. */
-export type Incidente = {
-  post_id: string;
-  causa: string;
-  recuperacao: string;
-  /** Segundos entre quebrar e perceber. */
-  deteccao_segundos: number;
-  /** Segundos entre perceber e voltar ao ar. */
-  mttr_segundos: number;
-  perdeu_dado: boolean;
-};
-
-/** Aresta do grafo. É o `[[link]]` do Obsidian sobrevivendo até o site. */
-export type Conexao = {
-  de: string;
-  para: string;
-};
-
-export type Habilidade = {
+/** Etiqueta com página própria (DEC-018): slug na URL, descrição de abertura. */
+export type Etiqueta = {
   id: string;
+  slug: string;
   nome: string;
-  categoria: string;
-  /** 1 a 5. Usado como medidor na página de currículo. */
-  nivel: number;
-  ordem: number;
+  descricao: string | null;
+  criado_em: string;
 };
 
-/** A ligação que faz o currículo valer: habilidade → post que prova. */
-export type Prova = {
-  habilidade_id: string;
-  post_id: string;
+/** Linha única (id = 1). O dono do currículo. */
+export type Perfil = {
+  id: number;
+  nome_completo: string;
+  nome_publico: string;
+  titulo: string;
+  resumo: string;
+  cidade: string | null;
+  email: string | null;
+  telefone: string | null;
+  /** Extensão local ao v3: a página mostra a foto ou "sem foto". */
+  foto_url: string | null;
+  atualizado_em: string;
+};
+
+export type PerfilLink = {
+  id: string;
+  rotulo: string;
+  url: string;
+  ordem: number;
 };
 
 export type Experiencia = {
   id: string;
   cargo: string;
-  organizacao: string;
+  empresa: string;
+  local: string | null;
   inicio: string;
+  /** NULL = atual. */
   fim: string | null;
-  resumo: string;
+  /** Extensão local ao v3: parágrafo corrido acima dos marcos. */
+  resumo: string | null;
+  marcos: string[];
   ordem: number;
 };
 
@@ -94,77 +76,49 @@ export type Formacao = {
   id: string;
   curso: string;
   instituicao: string;
-  inicio: string;
+  local: string | null;
+  situacao: string;
+  previsao_conclusao: string | null;
+  /** Extensão local ao v3: a página mostra "mmm aaaa — mmm aaaa". */
+  inicio: string | null;
   fim: string | null;
   ordem: number;
 };
 
-export type Perfil = {
+export type Habilidade = {
   id: string;
+  categoria: string;
   nome: string;
-  titulo: string;
-  bio: string;
-  foto_url: string | null;
-  email: string;
-  cidade: string | null;
+  ordem: number;
+  /** A ligação que faz o currículo valer: habilidade → post que prova. */
+  prova_post_id: string | null;
+  observacao: string | null;
+  /** Extensão local ao v3: 1 a 5, o Medidor de 5 traços da página. */
+  nivel: number;
 };
 
-/* ─────────────────────────── automações ─────────────────────────── */
-
-export type TipoIntegracao = "n8n" | "webhook" | "cron" | "api";
-export type EstadoExecucao = "ok" | "alerta" | "erro" | "rodando";
-
-export type Integracao = {
+export type Certificado = {
   id: string;
-  nome: string;
-  tipo: TipoIntegracao;
-  descricao: string | null;
-  /** Onde o painel bate pra disparar. O painel controla; quem executa é lá fora. */
-  url: string | null;
-  ativa: boolean;
-  /**
-   * Nome da variável de ambiente que guarda o segredo — NUNCA o segredo em si.
-   * Credencial em coluna de texto é vazamento esperando acontecer.
-   */
-  ref_segredo: string | null;
-  config: Record<string, unknown>;
-  ultimo_estado: EstadoExecucao | null;
-  ultima_execucao_em: string | null;
-  criado_em: string;
+  curso: string;
+  instituicao: string;
+  ano: number | null;
+  /** Caminho no balde 'certificados'. */
+  arquivo_path: string | null;
+  /** "Já conferi este PDF e ele pode ser aberto por qualquer pessoa" (DEC-021/023). */
+  publico: boolean;
+  ordem: number;
 };
 
-export type Execucao = {
-  id: string;
-  integracao_id: string;
-  estado: EstadoExecucao;
-  mensagem: string | null;
-  duracao_ms: number | null;
-  /** Quem disparou: 'painel' (manual) ou 'externo' (a própria automação avisando). */
-  origem: string;
-  criado_em: string;
-};
+/* ─────────────────────── telemetria pública ───────────────────────
+   Os números que o Modo Engenheiro mostra. Nada aqui é sigiloso: é a mesma
+   contagem que o visitante conseguiria fazer olhando as páginas. */
 
-/** Trilha de auditoria da fila. Quem aprovou o quê, quando, e por quê não. */
-export type EventoModeracao = {
-  id: string;
-  post_id: string;
-  acao: "enviou_revisao" | "aprovou" | "rejeitou" | "publicou" | "despublicou";
-  nota: string | null;
-  criado_em: string;
-};
-
-/* ─────────────────────────── auxiliares ─────────────────────────── */
-
-export const MATURIDADES: { chave: Maturidade; rotulo: string; glifo: string; descricao: string }[] = [
-  { chave: "semente", rotulo: "Semente", glifo: "◍", descricao: "Ideia crua. Anotei pra não perder, ainda não defendo." },
-  { chave: "muda", rotulo: "Muda", glifo: "◍◍", descricao: "Já tem forma e argumento. Ainda vou mexer." },
-  { chave: "perene", rotulo: "Perene", glifo: "◍◍◍", descricao: "Assentou. É o que eu penso, e volto aqui pra citar." },
-];
-
-export const ESTADOS: Record<Estado, { rotulo: string; cor: string }> = {
-  rascunho: { rotulo: "Rascunho", cor: "var(--muted)" },
-  em_revisao: { rotulo: "Em revisão", cor: "var(--warn)" },
-  aprovado: { rotulo: "Aprovado", cor: "var(--ok)" },
-  publicado: { rotulo: "Publicado", cor: "var(--accent)" },
-  rejeitado: { rotulo: "Rejeitado", cor: "var(--erro)" },
+export type Telemetria = {
+  posts: number;
+  etiquetas: number;
+  porPortal: Record<Portal, number>;
+  /** Publicação mais recente, pra "último plantio". */
+  ultimoPlantio: string | null;
+  /** Instante do build, pra mostrar de quando é esta página. */
+  build: string;
 };

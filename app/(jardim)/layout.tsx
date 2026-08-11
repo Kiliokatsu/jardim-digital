@@ -1,19 +1,27 @@
 import { CabecalhoPublico } from "@/componentes/CabecalhoPublico";
 import { RodapePublico } from "@/componentes/RodapePublico";
-import { buscarPerfil, telemetria } from "@/lib/consultas";
+import { Dragao } from "@/componentes/caos/Dragao";
+import { Grao } from "@/componentes/caos/Grao";
+import { buscarPerfil, listarPerfilLinks, telemetria } from "@/lib/consultas";
 
-/* Casca da visão pública. O painel fica fora deste grupo de rotas de propósito:
-   as duas visões não compartilham cabeçalho, rodapé nem densidade. */
+/* Casca da visão pública. O dragão e o granulado moram aqui — presentes em
+   toda página, mas inertes fora do modo caos (DEC-003-b: no modo normal o
+   laço de animação nem roda). */
 
 export default async function LayoutJardim({ children }: { children: React.ReactNode }) {
-  const [perfil, tele] = await Promise.all([buscarPerfil(), telemetria()]);
+  const [perfil, links, tele] = await Promise.all([
+    buscarPerfil(),
+    listarPerfilLinks(),
+    telemetria(),
+  ]);
 
   return (
     <>
-      <div className="aura" aria-hidden />
+      <Dragao />
+      <Grao />
       <CabecalhoPublico />
       <main className="mx-auto w-full max-w-[var(--maxw)] flex-1 px-6">{children}</main>
-      <RodapePublico perfil={perfil} telemetria={tele} />
+      <RodapePublico perfil={perfil} links={links} telemetria={tele} />
     </>
   );
 }
