@@ -1,0 +1,82 @@
+#!/bin/sh
+#
+# pre-commit — recusa o commit se um segredo estiver prestes a entrar no repositório.
+#
+# Por que isto existe e não basta o .gitignore: o .gitignore protege arquivo
+# esquecido, não protege chave colada dentro de um arquivo legítimo. O caso real
+# é colar a service_role key num .ts "só para testar" e commitar sem lembrar.
+#
+# Por que hook versionado e não husky: husky é mais uma dependência para explicar.
+# Isto é sh puro, 80 linhas, e roda igual em Windows, Linux e Mac.
+#
+# Ativar (uma vez por clone):  npm run preparar
+# Conferir:                    git config core.hooksPath   -> .githooks
+
+set -e
+
+vermelho() { printf '\033[31m%s\033[0m\n' "$1"; }
+amarelo()  { printf '\033[33m%s\033[0m\n' "$1"; }
+
+falhou=0
+
+# ---------------------------------------------------------------------------
+# 1. Arquivo de ambiente pelo nome
+# ---------------------------------------------------------------------------
+# Qualquer .env é barrado, menos os terminados em .example — esses são o mapa
+# das variáveis e precisam ser versionados.
+arquivos=$(git diff --cached --name-only --diff-filter=ACM)
+
+for arquivo in $arquivos; do
+  case "$arquivo" in
+    *.example) continue ;;
+    .env|.env.*|*/.env|*/.env.*)
+      vermelho "BLOQUEADO: arquivo de ambiente no commit -> $arquivo"
+      falhou=1
+      ;;
+  esac
+done
+
+# ---------------------------------------------------------------------------
+# 2. Segredo colado dentro de arquivo legítimo
+# ---------------------------------------------------------------------------
+# Só as linhas ADICIONADAS são inspecionadas — linha removida não vaza nada.
+# O próprio .githooks fica de fora: ele contém os padrões como texto.
+adicionadas=$(git diff --cached -U0 --diff-filter=ACM -- . ':(exclude).githooks' \
+              | grep '^+' | grep -v '^+++' || true)
+
+checar() {
+  # $1 = expressão regular estendida, $2 = nome legível do segredo
+  if printf '%s' "$adicionadas" | grep -qE "$1"; then
+    vermelho "BLOQUEADO: parece $2 numa linha adicionada"
+    falhou=1
+  fi
+}
+
+checar 'eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.'  "chave JWT do Supabase (anon ou service_role)"
+checar 'sb_(secret|publishable)_[A-Za-z0-9_-]{10,}'   "chave de API do Supabase"
+checar '(ghp|gho|ghs|ghu|ghr)_[A-Za-z0-9]{30,}'       "token do GitHub"
+checar 'github_pat_[A-Za-z0-9_]{20,}'                 "token pessoal do GitHub"
+checar '\-\-\-\-\-BEGIN [A-Z ]*PRIVATE KEY\-\-\-\-\-' "chave privada"
+checar 'postgres(ql)?://[^:[:space:]]+:[^@[:space:]]+@' "URL de banco com senha embutida"
+checar '(SERVICE_ROLE|SECRET|TOKEN|PASSWORD|PASSWD)[A-Z_]*[[:space:]]*=[[:space:]]*["'\'']?[A-Za-z0-9_-]{16,}' \
+      "variável de segredo com valor preenchido"
+
+# ---------------------------------------------------------------------------
+# Resultado
+# ---------------------------------------------------------------------------
+if [ "$falhou" -ne 0 ]; then
+  echo ""
+  amarelo "O commit foi recusado porque um segredo vazado no GitHub é eliminatório"
+  amarelo "numa avaliação — e reescrever histórico depois é muito pior que corrigir agora."
+  echo ""
+  echo "Como resolver:"
+  echo "  1. Tire o valor do arquivo e coloque em .env.local (que é ignorado pelo git)"
+  echo "  2. Deixe só o NOME da variável no .env.local.example"
+  echo "  3. git reset HEAD <arquivo>  para tirar da área de commit"
+  echo ""
+  echo "Se for falso positivo, confira com calma antes de usar --no-verify."
+  echo "Este hook errar é barato; ele deixar passar não é."
+  exit 1
+fi
+
+exit 0

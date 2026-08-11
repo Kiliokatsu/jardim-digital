@@ -30,8 +30,11 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env files — nenhum segredo entra no repositório.
+# O `!` reabre a exceção: o .example é documentação, não segredo, e sem ele
+# quem clonar o projeto não descobre quais variáveis precisa preencher.
 .env*
+!.env.local.example
 
 # vercel
 .vercel
