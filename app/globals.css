@@ -267,6 +267,50 @@ html[data-engenheiro="1"] [data-campo][data-campo-bloco]::after {
   }
 }
 
+/* o aviso do caos contido (DEC-0011): faixa fixa acima de tudo (inclusive da
+   barra de progresso, z 40) — é a única peça que fala COM o visitante sobre
+   o estado da página, então nada pode cobri-la. Sem animação de entrada de
+   propósito: quem vê este aviso pediu menos movimento. */
+.aviso-caos {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  max-width: min(560px, calc(100vw - 32px));
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--r);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+}
+.aviso-caos p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.aviso-caos strong {
+  color: var(--accent);
+}
+.aviso-caos button {
+  flex-shrink: 0;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--text);
+  font: 600 12px/1 var(--mono);
+  cursor: pointer;
+}
+.aviso-caos button:hover {
+  border-color: var(--accent);
+}
+
 .grao {
   position: fixed;
   inset: 0;

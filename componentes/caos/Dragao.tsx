@@ -19,6 +19,21 @@ import { useAtributo } from "@/componentes/Chaves";
 const SEGMENTOS = 40;
 const INDICES_DE_ASA = new Set([8, 14]);
 
+/* Proporção em relação à tela (DEC-0012): a menor dimensão da janela dividida
+   pela referência dá o fator, travado para não virar camarão em tela pequena.
+   O encolhimento global responde ao "um pouquinho grande" visto no desktop.
+   Números de partida — a calibração fina é decisão de olho do dono. */
+const TELA_DE_REFERENCIA = 900;
+const ENCOLHIMENTO_GLOBAL = 0.75;
+const PROPORCAO_MINIMA = 0.5;
+const PROPORCAO_MAXIMA = 1;
+
+function proporcaoDaTela(largura: number, altura: number): number {
+  const bruta = Math.min(largura, altura) / TELA_DE_REFERENCIA;
+  const travada = Math.min(PROPORCAO_MAXIMA, Math.max(PROPORCAO_MINIMA, bruta));
+  return ENCOLHIMENTO_GLOBAL * travada;
+}
+
 /* A tremulação do fogo: quanto a escala de cada segmento oscila (fração) e
    a que velocidade. Valores pequenos de propósito — chama treme, não pula. */
 const TREMULACAO = 0.06;
@@ -71,10 +86,12 @@ function CenaDragao() {
     let largura = window.innerWidth;
     let altura = window.innerHeight;
     let raioMaximo = Math.min(largura, altura) / 2 - 20;
+    let proporcao = proporcaoDaTela(largura, altura);
     const medir = () => {
       largura = window.innerWidth;
       altura = window.innerHeight;
       raioMaximo = Math.min(largura, altura) / 2 - 20;
+      proporcao = proporcaoDaTela(largura, altura);
     };
 
     // o dragão nasce no alto, no centro — a primeira perseguição é a entrada
@@ -110,11 +127,14 @@ function CenaDragao() {
         const seg = segmentos[i];
         const anterior = segmentos[i - 1];
         const angulo = Math.atan2(seg.y - anterior.y, seg.x - anterior.x);
-        // o termo (100 - i)/5 é o comprimento do elo: maior perto da cabeça
-        seg.x += (anterior.x - seg.x + (Math.cos(angulo) * (100 - i)) / 5) / 4;
-        seg.y += (anterior.y - seg.y + (Math.sin(angulo) * (100 - i)) / 5) / 4;
+        // o comprimento do elo — (100 - i)/5, maior perto da cabeça — encolhe
+        // JUNTO com o desenho (DEC-0012): escalar só um dos dois desmonta a
+        // anatomia (elos longos = colar de contas; curtos = amontoado)
+        const elo = ((100 - i) / 5) * proporcao;
+        seg.x += (anterior.x - seg.x + Math.cos(angulo) * elo) / 4;
+        seg.y += (anterior.y - seg.y + Math.sin(angulo) * elo) / 4;
 
-        const escalaBase = (162 + 4 * (1 - i)) / 50;
+        const escalaBase = ((162 + 4 * (1 - i)) / 50) * proporcao;
         const chama =
           1 + TREMULACAO * Math.sin(tempo * VELOCIDADE_TREMULACAO + i * 0.9);
         usos[i].setAttribute(

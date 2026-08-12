@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useMemo, useSyncExternalStore } from "react";
+import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
+import { AvisoContido } from "@/componentes/caos/AvisoContido";
 
 /* As chaves do cabeçalho. Cada uma escreve um atributo no <html> e guarda a
    escolha no localStorage — mesma mecânica do protótipo, só que tipada.
@@ -109,20 +110,39 @@ export function ChaveTema() {
 
 export function ChavePersona() {
   const [persona, trocar] = useAtributo("data-persona", "persona", "normal");
+  const [avisarContido, setAvisarContido] = useState(false);
+  // identidade estável: o relógio de auto-fechar do aviso depende desta função
+  const fecharAviso = useCallback(() => setAvisarContido(false), []);
+
+  /* DEC-0011: o aviso responde ao GESTO de ligar o caos, não à visita — e a
+     consulta é a mesma que segura o dragão, uma fonte da verdade só. Voltar
+     pro normal recolhe o aviso na hora: mensagem sobre o caos não pode
+     sobreviver à saída do caos. */
+  const aoTrocar = (novo: string) => {
+    trocar(novo);
+    setAvisarContido(
+      novo === "caos" &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+    );
+  };
+
   return (
-    <Chave
-      rotulo="Persona"
-      valor={persona}
-      ao={trocar}
-      opcoes={[
-        { v: "normal", rotulo: "Normal" },
-        {
-          v: "caos",
-          rotulo: "Caos",
-          titulo: "O mesmo site, com o fogo aceso — e um dragão atrás do cursor",
-        },
-      ]}
-    />
+    <>
+      <Chave
+        rotulo="Persona"
+        valor={persona}
+        ao={aoTrocar}
+        opcoes={[
+          { v: "normal", rotulo: "Normal" },
+          {
+            v: "caos",
+            rotulo: "Caos",
+            titulo: "O mesmo site, com o fogo aceso — e um dragão atrás do cursor",
+          },
+        ]}
+      />
+      {avisarContido && <AvisoContido aoFechar={fecharAviso} />}
+    </>
   );
 }
 

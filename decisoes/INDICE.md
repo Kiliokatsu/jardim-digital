@@ -12,6 +12,8 @@
 | [0008](0008-remocao-do-dragao.md) | Remover o dragão do modo caos; o efeito especial volta pela DEC-004 | 2026-08-11 | aceita | humano |
 | [0009](0009-playwright-e2e-em-modo-demonstracao.md) | Playwright E2E contra o build de produção, em modo demonstração | 2026-08-12 | aceita | claude |
 | [0010](0010-dragao-svg-em-chamas.md) | O dragão do caos volta em SVG, em chamas — não em canvas | 2026-08-12 | aceita | claude |
+| [0011](0011-caos-contido-avisa-na-tela.md) | Quando o sistema reduz movimento, ligar o caos mostra um aviso na tela | 2026-08-12 | aceita | claude |
+| [0012](0012-dragao-proporcional-a-tela.md) | O dragão ganha proporção em relação à tela, aplicada no laço de animação | 2026-08-12 | aceita | claude |
 
 ---
 
