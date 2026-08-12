@@ -1,109 +1,130 @@
 import Link from "next/link";
 import { CartaoPost } from "@/componentes/CartaoPost";
-import { Grafo } from "@/componentes/Grafo";
-import { CabecaSecao } from "@/componentes/Secao";
-import { SeloMaturidade } from "@/componentes/Selos";
-import { jardimPorMaturidade, listarConexoes, listarPosts } from "@/lib/consultas";
-import { MATURIDADES } from "@/lib/tipos";
+import { listarPosts, telemetria } from "@/lib/consultas";
+
+/* Home aprovada (DEC-007): uma frase que diz quem ele é e o que o site é, os
+   três portais como estrutura da página, e os registros recentes no fim.
+   Nenhuma menção a empresa — a DEC-025 vale inclusive aqui; empregador é
+   assunto do currículo. */
+
+const PORTAIS = [
+  {
+    href: "/profissional",
+    tipo: "página",
+    titulo: "Profissional",
+    texto:
+      "Currículo, o que eu já pus em produção, e cada habilidade ligada ao post que prova que eu entendi.",
+    icone: (
+      <svg viewBox="0 0 24 24" aria-hidden>
+        <path d="M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" />
+        <path d="M4 21c0-4 3.6-6 8-6s8 2 8 6" />
+      </svg>
+    ),
+  },
+  {
+    href: "/tecnologia",
+    tipo: "blog",
+    titulo: "Tecnologia",
+    texto:
+      "Decisão técnica com nome e sobrenome: por que troquei de ferramenta, o que quebrou, o que eu faria diferente.",
+    icone: (
+      <svg viewBox="0 0 24 24" aria-hidden>
+        <path d="m16 18 6-6-6-6M8 6l-6 6 6 6" />
+      </svg>
+    ),
+  },
+  {
+    href: "/pessoal",
+    tipo: "blog",
+    titulo: "Pessoal",
+    texto:
+      "Anime, eletrônica progressiva, análise de fundo imobiliário e o resto do caos que me faz ser eu.",
+    icone: (
+      <svg viewBox="0 0 24 24" aria-hidden>
+        <path d="M12 21s-7-4.6-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 5.4-7 10-7 10Z" />
+      </svg>
+    ),
+  },
+] as const;
 
 export default async function Home() {
-  const [canteiros, posts, conexoes] = await Promise.all([
-    jardimPorMaturidade(),
-    listarPosts(),
-    listarConexoes(),
-  ]);
+  const [posts, tele] = await Promise.all([listarPosts(), telemetria()]);
+  const [destaque, ...resto] = posts;
+  const dupla = resto.slice(0, 2);
 
   return (
     <>
-      {/* ─────────────────────────── abertura ─────────────────────────── */}
-      <section className="py-20 sm:py-28">
-        <p className="mb-4 font-mono text-xs uppercase tracking-[0.2em] text-acento">
-          Build in public · desde 2026
-        </p>
-        <h1 className="max-w-3xl text-4xl font-extrabold leading-[1.08] tracking-[-0.03em] sm:text-6xl">
+      <section className="hero">
+        <p className="sobre">Construindo em público · desde 2026</p>
+        <h1 className="titulo-vivo">
           Construo sistemas sólidos.
-          <br />
-          E mostro a <em className="font-serif italic text-acento">cozinha pegando fogo</em>.
+          <br />E mostro a <em>cozinha pegando fogo</em>.
         </h1>
-        <p className="mt-6 max-w-2xl text-lg leading-relaxed text-suave">
-          Engenharia de automação, orquestração de IA e as decisões técnicas que eu tomei
-          errado antes de tomar certo. Aqui nada nasce pronto — as notas amadurecem à vista.
+        <p className="sub">
+          Desenvolvedor de sistemas, cursando Engenharia de Controle e Automação. Aqui eu
+          escrevo as decisões técnicas que eu tomei errado antes de tomar certo — com o que eu
+          ganhei e o que eu perdi em cada troca.
         </p>
-
-        <div className="mt-8 flex flex-wrap items-center gap-3">
-          <Link
-            href="/profissional"
-            className="rounded-full bg-acento px-5 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
-          >
-            Ver currículo
+        <div className="acoes">
+          <Link className="btn primario" href="/profissional">
+            Quem eu sou e o que eu construí
           </Link>
-          <Link
-            href="/grafo"
-            className="rounded-full border border-linha bg-superficie px-5 py-2.5 text-sm font-medium text-suave transition-colors hover:border-acento/50 hover:text-tinta"
-          >
-            Abrir o grafo
+          <Link className="btn" href="/tecnologia">
+            Ler os registros
           </Link>
         </div>
-
-        {/* o convite pra virar a chave. sem isso, ninguém descobre o Modo Engenheiro. */}
-        <p className="mt-8 max-w-2xl rounded-[var(--radius-token)] border border-dashed border-linha px-4 py-3 text-sm text-suave">
-          <b className="text-tinta">Modo engenheiro</b> — a chave no topo abre o site por
-          dentro: cada elemento passa a dizer de qual coluna do banco ele veio. Sou engenheiro
-          de automação; achei justo que a instrumentação ficasse à vista.
-        </p>
       </section>
 
-      {/* ─────────────────────────── canteiros ─────────────────────────── */}
-      <section className="pb-8">
-        <CabecaSecao
-          titulo="O jardim"
-          contador={posts.length}
-          nota="Ordenado por maturidade, não por data. Semente é ideia crua; perene é o que eu já defendo em reunião. Nota velha continua crescendo — e nota nova pode nascer perene."
-        />
-
-        <div className="flex flex-col gap-10">
-          {MATURIDADES.slice()
-            .reverse()
-            .map(({ chave, rotulo, descricao }) => {
-              const doCanteiro = canteiros[chave];
-              return (
-                <div key={chave}>
-                  <div className="mb-4 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                    <h3 className="flex items-center gap-2 text-base font-bold tracking-tight">
-                      <SeloMaturidade maturidade={chave} />
-                      {rotulo}
-                    </h3>
-                    <span className="font-mono text-xs text-suave">
-                      {doCanteiro.length}
-                    </span>
-                    <p className="text-sm text-suave">{descricao}</p>
-                  </div>
-
-                  {doCanteiro.length === 0 ? (
-                    <p className="rounded-[var(--radius-token)] border border-dashed border-linha px-4 py-6 text-sm text-suave">
-                      Canteiro vazio por enquanto.
-                    </p>
-                  ) : (
-                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                      {doCanteiro.map((p) => (
-                        <CartaoPost key={p.id} post={p} densidade="canteiro" />
-                      ))}
-                    </div>
-                  )}
+      <section className="pb-6">
+        <div className="cabeca-sec">
+          <h2>Três portais</h2>
+          <div className="regua" aria-hidden />
+        </div>
+        <div className="portais">
+          {PORTAIS.map((p) => {
+            const quantos = p.href === "/profissional" ? null : tele.porPortal[p.titulo.toLowerCase() as "tecnologia" | "pessoal"];
+            return (
+              <Link key={p.href} href={p.href} className="portal">
+                <div className="ico" aria-hidden>{p.icone}</div>
+                <span className="tipo">
+                  {quantos === null ? p.tipo : `${p.tipo} · ${quantos} ${quantos === 1 ? "registro" : "registros"}`}
+                </span>
+                <h3>{p.titulo}</h3>
+                <p>{p.texto}</p>
+                <div className="vai">
+                  {p.href} <span aria-hidden>→</span>
                 </div>
-              );
-            })}
+              </Link>
+            );
+          })}
         </div>
       </section>
 
-      {/* ─────────────────────────── grafo ─────────────────────────── */}
-      <section className="py-14">
-        <CabecaSecao
-          titulo="Como as notas se ligam"
-          contador={conexoes.length}
-          nota="Este site nasce de um vault do Obsidian, e os [[links]] entre as notas vieram junto. Passe o mouse num ponto pra ver o que ele puxa."
-        />
-        <Grafo posts={posts} conexoes={conexoes} />
+      <section className="pb-10">
+        <div className="cabeca-sec">
+          <h2>Últimos registros</h2>
+          <div className="regua" aria-hidden />
+          <Link className="ver-tudo" href="/tecnologia">
+            ver todos →
+          </Link>
+        </div>
+
+        {posts.length === 0 ? (
+          <p className="rounded-[var(--radius-token)] border border-dashed border-linha px-4 py-8 text-sm text-suave">
+            Ainda não plantei nada aqui.
+          </p>
+        ) : (
+          <div className="flex flex-col gap-4">
+            {destaque && <CartaoPost post={destaque} densidade="destaque" />}
+            {dupla.length > 0 && (
+              <div className="grid gap-4 sm:grid-cols-2">
+                {dupla.map((p) => (
+                  <CartaoPost key={p.id} post={p} />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </section>
     </>
   );

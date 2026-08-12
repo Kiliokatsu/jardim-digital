@@ -1,38 +1,51 @@
 import Link from "next/link";
 import type { Post } from "@/lib/tipos";
-import { dataLonga } from "@/lib/formato";
-import { Etiqueta, SeloAutoria, SeloGenero, SeloMaturidade, SeloPortal } from "@/componentes/Selos";
+import { dataLonga, minutosDeLeitura } from "@/lib/formato";
+import { Etiqueta, SeloPortal } from "@/componentes/Selos";
 
-/* O cartão do jardim. Duas densidades: `canteiro` (na home, dentro do canteiro
-   de maturidade) e `lista` (nas páginas de portal, com resumo inteiro).
+/* O cartão de registro das telas aprovadas: meta em mono (portal · data ·
+   minutos), título, resumo e etiquetas. Duas densidades — `destaque` é o
+   primeiro da home, maior; `lista` é o padrão das listagens.
 
-   Cada pedaço carrega data-campo. Com o Modo Engenheiro ligado, o cartão vira
-   a documentação do próprio schema — é o exercício que você já tinha começado
-   no protótipo, agora alimentado pelo banco de verdade. */
+   Minutos de leitura são calculados do corpo na hora, não gravados: número
+   escrito à mão envelhece (o v3 não tem essa coluna de propósito). */
 
 export function CartaoPost({
   post, densidade = "lista",
 }: {
   post: Post;
-  densidade?: "canteiro" | "lista";
+  densidade?: "destaque" | "lista";
 }) {
-  const enxuto = densidade === "canteiro";
+  const emDestaque = densidade === "destaque";
+  const minutos = post.corpo ? minutosDeLeitura(post.corpo) : null;
 
   return (
     <article
       data-campo="posts"
-      data-campo-bloco=""
-      className="group relative flex flex-col gap-3 rounded-[var(--radius-token)] border border-linha bg-superficie p-5 transition-colors hover:border-acento/50"
+      className={[
+        "group relative flex flex-col gap-3 rounded-[var(--radius-token)] border border-linha bg-superficie p-5 transition-colors hover:border-acento/50",
+        emDestaque ? "sm:p-7" : "",
+      ].join(" ")}
     >
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <SeloMaturidade maturidade={post.maturidade} campo="maturidade" />
-        <SeloPortal portal={post.portal} campo="portal" />
-        <SeloGenero genero={post.genero} campo="genero" />
-        <SeloAutoria autoria={post.autoria} agente={post.agente} campo="autoria" />
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-xs text-suave">
+        <SeloPortal portal={post.portal} />
+        <span data-campo="publicado_em">{dataLonga(post.publicado_em)}</span>
+        {minutos !== null && <span>{minutos} min</span>}
+        {post.tem_indicacao && (
+          <span className="text-gelo" title="Este post contém link de indicação, avisado no fim do texto">
+            contém indicação
+          </span>
+        )}
       </div>
 
-      <h3 className={enxuto ? "text-[1.05rem] font-bold leading-snug tracking-tight" : "text-xl font-bold leading-snug tracking-tight"}>
-        <Link href={`/registro/${post.slug}`} className="hover:text-acento">
+      <h3
+        className={
+          emDestaque
+            ? "text-2xl font-extrabold leading-snug tracking-tight"
+            : "text-xl font-bold leading-snug tracking-tight"
+        }
+      >
+        <Link href={`/registro/${post.slug}`} className="transition-colors hover:text-acento">
           {/* o link cobre o cartão inteiro, mas o texto continua sendo o alvo real */}
           <span className="absolute inset-0" aria-hidden />
           <span data-campo="titulo">{post.titulo}</span>
@@ -40,42 +53,22 @@ export function CartaoPost({
       </h3>
 
       {post.resumo && (
-        <p
-          data-campo="resumo"
-          className={[
-            "text-[0.94rem] leading-relaxed text-suave",
-            enxuto ? "line-clamp-3" : "",
-          ].join(" ")}
-        >
+        <p data-campo="resumo" className="max-w-3xl text-[0.94rem] leading-relaxed text-suave">
           {post.resumo}
         </p>
       )}
 
-      <div className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-2 pt-1 text-xs text-suave">
-        <span data-campo="publicado_em">{dataLonga(post.publicado_em)}</span>
-        <span aria-hidden className="text-linha">·</span>
-        <span data-campo="minutos_leitura">{post.minutos_leitura} min</span>
-        {post.aviso_indicacao && (
-          <>
-            <span aria-hidden className="text-linha">·</span>
-            <span className="text-alerta" title="Este post contém link de indicação, avisado no corpo do texto">
-              contém indicação
-            </span>
-          </>
-        )}
-      </div>
-
-      {!enxuto && post.tags.length > 0 && (
-        <div data-campo="tags" className="flex flex-wrap gap-1.5">
-          {post.tags.map((t) => (
-            <Etiqueta key={t}>{t}</Etiqueta>
+      {(post.etiquetas?.length ?? 0) > 0 && (
+        <div data-campo="etiquetas" className="relative z-10 flex flex-wrap gap-1.5">
+          {post.etiquetas!.map((e) => (
+            <Etiqueta key={e.id} slug={e.slug}>{e.nome}</Etiqueta>
           ))}
         </div>
       )}
 
-      {/* só visível com o Modo Engenheiro ligado */}
+      {/* só visível com o Modo Engenheiro ligado: o cartão documenta a própria linha */}
       <div className="so-engenheiro border-t border-linha pt-2 font-mono text-[10px] leading-relaxed text-suave">
-        id {post.id} · slug <span className="text-acento">{post.slug}</span> · revisões {post.revisoes}
+        slug <span className="text-acento">{post.slug}</span> · idioma {post.idioma} · atualizado {post.atualizado_em?.slice(0, 10)}
       </div>
     </article>
   );

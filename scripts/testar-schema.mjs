@@ -1,18 +1,26 @@
 /**
- * Valida supabase/schema.sql e supabase/seed.sql contra um Postgres de verdade
- * (PGlite, o Postgres compilado pra WASM) antes de colar qualquer coisa no
- * Supabase de produção.
+ * Valida supabase/migrations/0001_reconstrucao_v3.sql e supabase/seed.sql
+ * contra um Postgres de verdade (PGlite, o Postgres compilado pra WASM)
+ * antes de colar qualquer coisa no Supabase de produção.
  *
  *   npm run testar-schema
  *
- * O objetivo não é só "o SQL roda sem erro de sintaxe". É provar as duas regras
+ * O objetivo não é só "o SQL roda sem erro de sintaxe". É provar as garantias
  * que o desenho promete e que a aplicação inteira assume como verdade:
  *
- *   1. Não existe caminho pra `publicado` sem passar por `aprovado`.
- *   2. A coluna de referência de segredo recusa qualquer coisa que pareça token.
+ *   1. Anônimo só lê post publicado — rascunho e post com data futura somem,
+ *      inclusive pela porta lateral da etiqueta (posts_etiquetas).
+ *   2. Autenticado não é autorizado (DEC-020): só quem está em `admins`
+ *      escreve, e o admin VÊ o próprio rascunho (o bug da DEC-022).
+ *   3. GRANT e POLICY são dois portões separados (DEC-017): revogar o GRANT
+ *      vira "permission denied"; a policy barrando vira zero linhas (leitura)
+ *      ou "row-level security" (escrita).
  *
  * Se um destes testes passar a falhar depois de você mexer no schema, é porque
  * uma garantia caiu — não porque o teste está chato.
+ *
+ * A migration 0002 (Storage) NÃO roda aqui: o PGlite não tem o schema
+ * `storage` do Supabase. Ela só é validada no ambiente real.
  */
 
 import { readFile } from "node:fs/promises";
@@ -69,39 +77,69 @@ function igual(obtido, esperado, oQue) {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   Stub do que o Supabase põe no banco e o Postgres cru não tem.
-   auth.jwt() é a função que eh_dono() consulta pra saber quem está pedindo.
+   Stub do que o Supabase põe no banco e o Postgres cru não tem:
+   - os papéis anon e authenticated (a migration faz GRANT pra eles);
+   - o schema auth com auth.uid(), que is_admin() consulta pra saber quem
+     está pedindo. No Supabase o uid vem do token da requisição; aqui é uma
+     variável de sessão, pra que o teste possa "virar" admin, virar um
+     autenticado qualquer e voltar a ser anônimo à vontade.
+   Uma auth.users mínima não é necessária: admins.user_id é uuid sem FK.
    ───────────────────────────────────────────────────────────────────────── */
 const STUB_SUPABASE = `
+do $$ begin
+  create role anon nologin;
+exception when duplicate_object then null; end $$;
+
+do $$ begin
+  create role authenticated nologin;
+exception when duplicate_object then null; end $$;
+
+grant usage on schema public to anon, authenticated;
+
 create schema if not exists auth;
 
--- No Supabase isto vem do token da requisição. Aqui é uma variável de sessão,
--- pra que o teste possa "virar" o dono e voltar a ser anônimo à vontade.
-create or replace function auth.jwt() returns jsonb
-  language sql stable as $$
-    select coalesce(
-      nullif(current_setting('teste.jwt', true), '')::jsonb,
-      '{}'::jsonb
-    );
-  $$;
-
 create or replace function auth.uid() returns uuid
-  language sql stable as $$ select null::uuid $$;
+  language sql stable as $$
+    select nullif(current_setting('teste.uid', true), '')::uuid;
+  $$;
 `;
+
+const ADMIN_UID = "11111111-1111-4111-8111-111111111111";
+const ESTRANHO_UID = "22222222-2222-4222-8222-222222222222";
 
 const db = new PGlite();
 
-console.log(`\n${CINZA}Postgres em WASM (PGlite) — validando o schema antes do Supabase${FIM}\n`);
+/** Roda fn como um papel do Supabase, com o uid dado (null = sem sessão). */
+async function como(papel, uid, fn) {
+  await db.query("select set_config('teste.uid', $1, false)", [uid ?? ""]);
+  await db.exec(`set role ${papel}`);
+  try {
+    return await fn();
+  } finally {
+    await db.exec("reset role");
+  }
+}
+
+console.log(`\n${CINZA}Postgres em WASM (PGlite) — validando as migrations antes do Supabase${FIM}\n`);
 
 /* ─────────────────────────── 1. o SQL roda ─────────────────────────── */
 
-await ok("stub do auth do Supabase aplica", async () => {
+await ok("stub do Supabase aplica (papéis anon/authenticated + auth.uid())", async () => {
   await db.exec(STUB_SUPABASE);
 });
 
-await ok("schema.sql roda inteiro, sem erro", async () => {
-  const sql = await readFile(new URL("../supabase/schema.sql", import.meta.url), "utf8");
-  await db.exec(sql);
+await ok("migration 0001 roda inteira, sem erro", async () => {
+  const sql = await readFile(
+    new URL("../supabase/migrations/0001_reconstrucao_v3.sql", import.meta.url),
+    "utf8",
+  );
+  // O PGlite não embute a extensão pgcrypto. Não faz falta no teste:
+  // gen_random_uuid() é nativo do Postgres desde a versão 13.
+  const semPgcrypto = sql.replace(
+    "create extension if not exists pgcrypto;",
+    "-- (pgcrypto pulado no teste: PGlite não embute a extensão)",
+  );
+  await db.exec(semPgcrypto);
 });
 
 await ok("seed.sql roda inteiro, sem erro", async () => {
@@ -109,186 +147,18 @@ await ok("seed.sql roda inteiro, sem erro", async () => {
   await db.exec(sql);
 });
 
-await ok("schema.sql é idempotente (roda duas vezes)", async () => {
-  const sql = await readFile(new URL("../supabase/schema.sql", import.meta.url), "utf8");
+await ok("seed.sql é idempotente (roda duas vezes sem duplicar)", async () => {
+  const sql = await readFile(new URL("../supabase/seed.sql", import.meta.url), "utf8");
   await db.exec(sql);
+  const posts = await db.query("select count(*)::int as n from posts");
+  igual(posts.rows[0].n, 3, "posts após a segunda rodada do seed");
+  const links = await db.query("select count(*)::int as n from perfil_links");
+  igual(links.rows[0].n, 2, "perfil_links após a segunda rodada do seed");
 });
 
-/* ─────────────────── 2. a semente atravessou a fila ─────────────────── */
+/* ─────────────────────── 2. estrutura de segurança ─────────────────────── */
 
-await ok("a semente publicou os 3 posts passando pela fila", async () => {
-  const r = await db.query(`select count(*)::int as n from posts where estado = 'publicado'`);
-  igual(r.rows[0].n, 3, "posts publicados");
-});
-
-await ok("todo post publicado tem data de publicação", async () => {
-  const r = await db.query(
-    `select count(*)::int as n from posts where estado = 'publicado' and publicado_em is null`,
-  );
-  igual(r.rows[0].n, 0, "publicados sem data");
-});
-
-await ok("a trilha de moderação registrou cada passo da fila", async () => {
-  const r = await db.query(
-    `select acao, count(*)::int as n from moderacao group by acao order by acao`,
-  );
-  const porAcao = Object.fromEntries(r.rows.map((l) => [l.acao, l.n]));
-  igual(porAcao.enviou_revisao, 3, "enviou_revisao");
-  igual(porAcao.aprovou, 3, "aprovou");
-  igual(porAcao.publicou, 3, "publicou");
-});
-
-/* ═══════════════════ 3. O INTERLOCK — o teste que importa ═══════════════════ */
-
-await recusa(
-  "post NÃO pode nascer publicado",
-  () =>
-    db.exec(`
-      insert into posts (slug, titulo, corpo_md, portal, estado, publicado_em)
-      values ('nasce-publicado', 'Tentando nascer pronto', 'x', 'tecnologia', 'publicado', now())
-    `),
-  "não pode nascer publicado",
-);
-
-await ok("cria um rascunho pra atacar o interlock", async () => {
-  await db.exec(`
-    insert into posts (slug, titulo, corpo_md, portal, estado)
-    values ('alvo-do-teste', 'Alvo do teste de interlock', 'corpo inicial', 'tecnologia', 'rascunho')
-  `);
-});
-
-await recusa(
-  "rascunho NÃO pula direto pra publicado",
-  () => db.exec(`update posts set estado = 'publicado' where slug = 'alvo-do-teste'`),
-  "publicação bloqueada",
-);
-
-await recusa(
-  "em revisão NÃO pula pra publicado sem aprovação",
-  async () => {
-    await db.exec(`update posts set estado = 'em_revisao' where slug = 'alvo-do-teste'`);
-    await db.exec(`update posts set estado = 'publicado' where slug = 'alvo-do-teste'`);
-  },
-  "publicação bloqueada",
-);
-
-await recusa(
-  "rejeitado NÃO pula pra publicado",
-  async () => {
-    await db.exec(`update posts set estado = 'rejeitado' where slug = 'alvo-do-teste'`);
-    await db.exec(`update posts set estado = 'publicado' where slug = 'alvo-do-teste'`);
-  },
-  "publicação bloqueada",
-);
-
-await ok("aprovado → publicado passa, e a data é preenchida sozinha", async () => {
-  await db.exec(`update posts set estado = 'rascunho'   where slug = 'alvo-do-teste'`);
-  await db.exec(`update posts set estado = 'em_revisao' where slug = 'alvo-do-teste'`);
-  await db.exec(`update posts set estado = 'aprovado'   where slug = 'alvo-do-teste'`);
-  await db.exec(`update posts set estado = 'publicado'  where slug = 'alvo-do-teste'`);
-
-  const r = await db.query(
-    `select estado, publicado_em is not null as tem_data from posts where slug = 'alvo-do-teste'`,
-  );
-  igual(r.rows[0].estado, "publicado", "estado final");
-  igual(r.rows[0].tem_data, true, "publicado_em preenchido pelo trigger");
-});
-
-await ok("mexer no corpo conta revisão; mexer no resto, não", async () => {
-  const antes = await db.query(`select revisoes from posts where slug = 'alvo-do-teste'`);
-
-  await db.exec(`update posts set corpo_md = 'corpo mexido' where slug = 'alvo-do-teste'`);
-  const depois = await db.query(`select revisoes from posts where slug = 'alvo-do-teste'`);
-  igual(depois.rows[0].revisoes, antes.rows[0].revisoes + 1, "revisões após mexer no corpo");
-
-  await db.exec(`update posts set titulo = 'Outro título' where slug = 'alvo-do-teste'`);
-  const semMexer = await db.query(`select revisoes from posts where slug = 'alvo-do-teste'`);
-  igual(semMexer.rows[0].revisoes, depois.rows[0].revisoes, "revisões após mexer só no título");
-});
-
-/* ═════════════════ 4. credencial não entra no banco ═════════════════ */
-
-await recusa(
-  "ref_segredo recusa o que parece um token de verdade",
-  () =>
-    db.exec(`
-      update integracoes set ref_segredo = 'sk-live-9f8a7b6c5d4e3f2a1b0c'
-       where nome = 'brevo-transacional'
-    `),
-  "ref_segredo_nao_parece_segredo",
-);
-
-await ok("ref_segredo aceita nome de variável de ambiente", async () => {
-  await db.exec(
-    `update integracoes set ref_segredo = 'BREVO_API_KEY_NOVA' where nome = 'brevo-transacional'`,
-  );
-});
-
-/* ═════════════════════ 5. o resto das garantias ═════════════════════ */
-
-await ok("execução nova espelha o estado na integração", async () => {
-  await db.exec(`
-    insert into execucoes (integracao_id, estado, mensagem, origem)
-    select id, 'erro', 'teste de espelhamento', 'painel'
-      from integracoes where nome = 'backup-diario'
-  `);
-  const r = await db.query(
-    `select ultimo_estado, ultima_execucao_em is not null as tem_data
-       from integracoes where nome = 'backup-diario'`,
-  );
-  igual(r.rows[0].ultimo_estado, "erro", "ultimo_estado espelhado");
-  igual(r.rows[0].tem_data, true, "ultima_execucao_em espelhada");
-});
-
-await recusa(
-  "nota não pode se conectar a si mesma",
-  () =>
-    db.exec(`insert into conexoes (de, para)
-             select id, id from posts where slug = 'resend-para-brevo'`),
-  "sem_autoligacao",
-);
-
-await recusa(
-  "não existe um segundo perfil",
-  () => db.exec(`insert into perfil (id, nome, titulo, email) values (2, 'Outro', 'x', 'a@b.c')`),
-  "perfil_id_check",
-);
-
-await ok("a view jardim só mostra o que está publicado", async () => {
-  const view = await db.query(`select count(*)::int as n from jardim`);
-  const tabela = await db.query(
-    `select count(*)::int as n from posts where estado = 'publicado' and publicado_em <= now()`,
-  );
-  igual(view.rows[0].n, tabela.rows[0].n, "linhas na view vs. publicados");
-
-  const rascunho = await db.query(
-    `select count(*)::int as n from jardim j
-      join posts p on p.id = j.id where p.estado <> 'publicado'`,
-  );
-  igual(rascunho.rows[0].n, 0, "rascunho aparecendo no jardim");
-});
-
-await ok("a busca em português indexou o conteúdo", async () => {
-  const r = await db.query(
-    `select count(*)::int as n from posts
-      where busca @@ websearch_to_tsquery('portuguese', 'backup')`,
-  );
-  if (r.rows[0].n < 1) throw new Error("a busca por 'backup' não achou o post do incidente");
-});
-
-await ok("habilidade aponta pro post que a prova", async () => {
-  const r = await db.query(`
-    select h.nome, p.slug from provas pr
-      join habilidades h on h.id = pr.habilidade_id
-      join posts p on p.id = pr.post_id
-     order by h.nome
-  `);
-  if (r.rows.length < 3) throw new Error(`esperava 3 provas, veio ${r.rows.length}`);
-});
-
-/* ═════════════════════ 6. RLS: as duas visões ═════════════════════ */
-
-await ok("RLS está ligada em todas as tabelas que importam", async () => {
+await ok("RLS está ligada em TODAS as tabelas do schema public", async () => {
   const r = await db.query(`
     select c.relname from pg_class c
       join pg_namespace n on n.oid = c.relnamespace
@@ -300,115 +170,323 @@ await ok("RLS está ligada em todas as tabelas que importam", async () => {
   }
 });
 
-await ok("eh_dono() é falso pra anônimo e verdadeiro pro dono", async () => {
-  await db.exec(`select set_config('teste.jwt', '{}', false)`);
-  const anon = await db.query(`select eh_dono() as r`);
-  igual(anon.rows[0].r, false, "eh_dono() para anônimo");
+await ok("GRANT existe: anon lê as 9 tabelas públicas e não escreve nenhuma", async () => {
+  const leitura = await db.query(`
+    select count(distinct table_name)::int as n
+      from information_schema.role_table_grants
+     where grantee = 'anon' and table_schema = 'public' and privilege_type = 'SELECT'
+  `);
+  igual(leitura.rows[0].n, 9, "tabelas com SELECT pro anon (admins fica de fora)");
 
-  await db.exec(
-    `select set_config('teste.jwt', '{"email":"dono@exemplo.com"}', false)`,
-  );
-  const dono = await db.query(`select eh_dono() as r`);
-  igual(dono.rows[0].r, true, "eh_dono() para o dono");
-
-  await db.exec(`select set_config('teste.jwt', '{"email":"estranho@exemplo.com"}', false)`);
-  const outro = await db.query(`select eh_dono() as r`);
-  igual(outro.rows[0].r, false, "eh_dono() para outra conta autenticada");
+  const escrita = await db.query(`
+    select count(*)::int as n
+      from information_schema.role_table_grants
+     where grantee = 'anon' and table_schema = 'public'
+       and privilege_type in ('INSERT', 'UPDATE', 'DELETE')
+  `);
+  igual(escrita.rows[0].n, 0, "grants de escrita pro anon");
 });
 
-await ok("políticas existem em posts, integrações e log", async () => {
+await ok("GRANT existe: authenticated tem escrita (o portão 2 é a policy)", async () => {
   const r = await db.query(`
-    select tablename, count(*)::int as n from pg_policies
-     where schemaname = 'public' group by tablename order by tablename
+    select count(distinct table_name)::int as n
+      from information_schema.role_table_grants
+     where grantee = 'authenticated' and table_schema = 'public'
+       and privilege_type = 'INSERT'
   `);
-  const porTabela = Object.fromEntries(r.rows.map((l) => [l.tablename, l.n]));
-  for (const t of ["posts", "integracoes", "execucoes", "moderacao", "conexoes", "incidentes"]) {
-    if (!porTabela[t]) throw new Error(`tabela ${t} está sem política de RLS`);
-  }
-  igual(porTabela.posts, 2, "políticas em posts (leitura pública + dono)");
-  igual(porTabela.integracoes, 1, "políticas em integracoes (só dono — sala de máquinas)");
+  igual(r.rows[0].n, 9, "tabelas com INSERT pro authenticated");
 });
 
-/* ═══════════════ 7. RLS de verdade: barrando um papel real ═══════════════
+/* ────────────── 3. fixtures: o que o público NÃO deve ver ────────────── */
 
-   Os testes acima provam que as políticas EXISTEM. Isso não é a mesma coisa que
-   provar que elas BARRAM alguém: até aqui tudo rodou como superusuário, e
-   superusuário ignora RLS por definição. Então criamos o papel `anon` (o mesmo
-   nome que o Supabase usa pra chave anônima), viramos ele, e tentamos ler o que
-   não deveríamos. Sem esta parte, o teste dá uma falsa sensação de segurança. */
-
-await ok("prepara o papel anon com os mesmos privilégios do Supabase", async () => {
+await ok("fixtures criadas (rascunho, post futuro, ligação e certificados)", async () => {
   await db.exec(`
-    do $$ begin
-      create role anon nologin;
-    exception when duplicate_object then null; end $$;
+    insert into posts (slug, portal, titulo, resumo, corpo)
+    values ('rascunho-fixture', 'tecnologia', 'Rascunho invisível', 'r', 'corpo do rascunho');
 
-    grant usage on schema public to anon;
-    grant select on all tables in schema public to anon;
+    insert into posts (slug, portal, titulo, resumo, corpo, publicado_em)
+    values ('futuro-fixture', 'tecnologia', 'Agendado', 'r', 'c', now() + interval '1 day');
+
+    -- rascunho ganha a etiqueta 'postgres' — é a porta lateral que o teste
+    -- de posts_etiquetas tenta abrir
+    insert into posts_etiquetas (post_id, etiqueta_id)
+    select p.id, e.id from posts p, etiquetas e
+     where p.slug = 'rascunho-fixture' and e.slug = 'postgres';
+
+    insert into certificados (curso, instituicao, ano, publico)
+    values ('Curso conferido', 'Instituição A', 2024, true),
+           ('Curso não conferido', 'Instituição B', 2025, false);
   `);
 });
 
-await ok("anônimo lê só o que está publicado", async () => {
-  await db.exec(`set role anon`);
-  const visiveis = await db.query(`select count(*)::int as n from posts`);
-  await db.exec(`reset role`);
+/* ─────────────────── 4. a visão do anônimo (portal público) ─────────────────── */
 
+await ok("anônimo lê só post com publicado_em não nulo e <= now()", async () => {
   const publicados = await db.query(
-    `select count(*)::int as n from posts where estado = 'publicado' and publicado_em <= now()`,
+    "select count(*)::int as n from posts where publicado_em is not null and publicado_em <= now()",
   );
-  const total = await db.query(`select count(*)::int as n from posts`);
-
-  igual(visiveis.rows[0].n, publicados.rows[0].n, "posts visíveis pro anônimo");
+  const total = await db.query("select count(*)::int as n from posts");
   if (total.rows[0].n <= publicados.rows[0].n) {
     throw new Error("o teste não vale: não existe rascunho no banco pra ficar escondido");
   }
-});
 
-await ok("anônimo NÃO vê rascunho nem texto de agente não publicado", async () => {
-  await db.exec(`set role anon`);
-  const r = await db.query(
-    `select count(*)::int as n from posts where estado <> 'publicado'`,
+  const visiveis = await como("anon", null, () =>
+    db.query("select count(*)::int as n from posts"),
   );
-  await db.exec(`reset role`);
-  igual(r.rows[0].n, 0, "rascunhos vazando pro anônimo");
+  igual(visiveis.rows[0].n, publicados.rows[0].n, "posts visíveis pro anônimo");
 });
 
-await ok("anônimo NÃO enxerga a sala de máquinas", async () => {
-  await db.exec(`set role anon`);
-  const integracoes = await db.query(`select count(*)::int as n from integracoes`);
-  const execucoes = await db.query(`select count(*)::int as n from execucoes`);
-  const moderacao = await db.query(`select count(*)::int as n from moderacao`);
-  await db.exec(`reset role`);
-
-  igual(integracoes.rows[0].n, 0, "integrações vazando (inclui ref_segredo)");
-  igual(execucoes.rows[0].n, 0, "log de execuções vazando");
-  igual(moderacao.rows[0].n, 0, "trilha de moderação vazando");
+await ok("anônimo NÃO vê rascunho nem post com data futura", async () => {
+  const r = await como("anon", null, () =>
+    db.query(
+      "select count(*)::int as n from posts where publicado_em is null or publicado_em > now()",
+    ),
+  );
+  igual(r.rows[0].n, 0, "não-publicados vazando pro anônimo");
 });
 
-await ok("anônimo NÃO consegue escrever nada", async () => {
-  await db.exec(`set role anon`);
-  let escreveu = false;
-  try {
-    await db.exec(`
-      insert into posts (slug, titulo, corpo_md, portal)
-      values ('invasao', 'Post de estranho', 'x', 'tecnologia')
-    `);
-    escreveu = true;
-  } catch {
-    /* recusado, que é o esperado */
+await ok("a ligação posts_etiquetas segue a visibilidade do post (rascunho não vaza pela etiqueta)", async () => {
+  const consulta = `
+    select count(*)::int as n from posts_etiquetas pe
+      join etiquetas e on e.id = pe.etiqueta_id
+     where e.slug = 'postgres'
+  `;
+  const totais = await db.query(consulta); // superusuário vê tudo
+  const anon = await como("anon", null, () => db.query(consulta));
+  if (totais.rows[0].n <= anon.rows[0].n) {
+    throw new Error("o teste não vale: a ligação do rascunho não existe no banco");
   }
-  await db.exec(`reset role`);
-  if (escreveu) throw new Error("anônimo conseguiu inserir post");
+  igual(anon.rows[0].n, totais.rows[0].n - 1, "ligações visíveis pro anônimo");
+});
+
+await ok("certificado com publico = false é invisível pro anônimo", async () => {
+  const r = await como("anon", null, () =>
+    db.query("select count(*)::int as n, count(*) filter (where not publico)::int as ocultos from certificados"),
+  );
+  igual(r.rows[0].n, 1, "certificados visíveis pro anônimo");
+  igual(r.rows[0].ocultos, 0, "certificado não conferido vazando");
 });
 
 await ok("o currículo continua legível pro anônimo (é pra ser público)", async () => {
-  await db.exec(`set role anon`);
-  const habilidades = await db.query(`select count(*)::int as n from habilidades`);
-  const perfil = await db.query(`select count(*)::int as n from perfil`);
-  await db.exec(`reset role`);
+  const r = await como("anon", null, async () => ({
+    perfil: await db.query("select count(*)::int as n from perfil"),
+    habilidades: await db.query("select count(*)::int as n from habilidades"),
+    etiquetas: await db.query("select count(*)::int as n from etiquetas"),
+  }));
+  igual(r.perfil.rows[0].n, 1, "perfil legível");
+  igual(r.habilidades.rows[0].n, 6, "habilidades legíveis");
+  igual(r.etiquetas.rows[0].n, 8, "etiquetas legíveis");
+});
 
-  if (habilidades.rows[0].n === 0) throw new Error("habilidades invisíveis — o currículo quebra");
-  igual(perfil.rows[0].n, 1, "perfil legível");
+/* ─────────────── 5. is_admin(): autenticado não é autorizado ─────────────── */
+
+await ok("is_admin() é falso pra anônimo", async () => {
+  const r = await como("anon", null, () => db.query("select is_admin() as r"));
+  igual(r.rows[0].r, false, "is_admin() para anônimo");
+});
+
+await ok("is_admin() é falso pra autenticado NÃO alistado (DEC-020)", async () => {
+  const r = await como("authenticated", ESTRANHO_UID, () => db.query("select is_admin() as r"));
+  igual(r.rows[0].r, false, "is_admin() para conta de fora da tabela admins");
+});
+
+await ok("is_admin() é verdadeiro pro user_id alistado em admins", async () => {
+  // o alistamento manual da DEC-020, simulado: uma linha inserida "pelo Studio"
+  await db.query(
+    "insert into admins (user_id, nota) values ($1, 'conta de teste do alistamento') on conflict do nothing",
+    [ADMIN_UID],
+  );
+  const r = await como("authenticated", ADMIN_UID, () => db.query("select is_admin() as r"));
+  igual(r.rows[0].r, true, "is_admin() para o admin alistado");
+});
+
+/* ────────── 6. o teste que importa: admin vê o próprio rascunho ────────── */
+
+await ok("admin INSERE um rascunho (a policy de escrita deixa)", async () => {
+  await como("authenticated", ADMIN_UID, () =>
+    db.exec(`
+      insert into posts (slug, portal, titulo, resumo, corpo)
+      values ('rascunho-do-admin', 'tecnologia', 'Rascunho recém-inserido', 'r', 'corpo')
+    `),
+  );
+});
+
+await ok("admin VÊ o próprio rascunho logo depois de inserir (o bug da DEC-022)", async () => {
+  // Sem a policy "admin vê tudo, inclusive rascunho", este select devolvia
+  // zero linhas: o admin inseria e o registro sumia da frente dele, sem erro.
+  const r = await como("authenticated", ADMIN_UID, () =>
+    db.query("select count(*)::int as n from posts where slug = 'rascunho-do-admin'"),
+  );
+  igual(r.rows[0].n, 1, "rascunho visível pro próprio admin");
+});
+
+await ok("o mesmo rascunho continua invisível pro anônimo", async () => {
+  const r = await como("anon", null, () =>
+    db.query("select count(*)::int as n from posts where slug = 'rascunho-do-admin'"),
+  );
+  igual(r.rows[0].n, 0, "rascunho do admin vazando pro anônimo");
+});
+
+await ok("admin vê toda ligação e o certificado não conferido", async () => {
+  const r = await como("authenticated", ADMIN_UID, async () => ({
+    ligacoes: await db.query(`
+      select count(*)::int as n from posts_etiquetas pe
+        join posts p on p.id = pe.post_id
+       where p.slug = 'rascunho-fixture'
+    `),
+    certificados: await db.query("select count(*)::int as n from certificados"),
+  }));
+  igual(r.ligacoes.rows[0].n, 1, "ligação do rascunho visível pro admin");
+  igual(r.certificados.rows[0].n, 2, "certificados (inclusive não conferido) pro admin");
+});
+
+/* ──────────────── 7. escrita: os dois portões da DEC-017 ──────────────── */
+
+await ok("anônimo não escreve em NENHUMA tabela (portão 1: permission denied)", async () => {
+  const tentativas = [
+    ["posts", "insert into posts (slug, portal, titulo, resumo, corpo) values ('invasao', 'tecnologia', 'x', 'x', 'x')"],
+    ["etiquetas", "insert into etiquetas (slug, nome) values ('invasao', 'Invasão')"],
+    ["posts_etiquetas", "insert into posts_etiquetas (post_id, etiqueta_id) values (gen_random_uuid(), gen_random_uuid())"],
+    ["perfil", "update perfil set nome_completo = 'Invasor' where id = 1"],
+    ["perfil_links", "insert into perfil_links (rotulo, url) values ('x', 'x')"],
+    ["experiencias", "insert into experiencias (cargo, empresa, inicio) values ('x', 'x', '2020-01-01')"],
+    ["formacao", "insert into formacao (curso, instituicao) values ('x', 'x')"],
+    ["habilidades", "insert into habilidades (categoria, nome) values ('x', 'x')"],
+    ["certificados", "insert into certificados (curso, instituicao) values ('x', 'x')"],
+    ["admins", "insert into admins (user_id) values (gen_random_uuid())"],
+  ];
+  for (const [tabela, sql] of tentativas) {
+    let barrou = false;
+    let motivo = "";
+    try {
+      await como("anon", null, () => db.exec(sql));
+    } catch (e) {
+      barrou = true;
+      motivo = e.message ?? "";
+    }
+    if (!barrou) throw new Error(`anônimo conseguiu escrever em ${tabela}`);
+    if (!motivo.toLowerCase().includes("permission denied")) {
+      throw new Error(`${tabela}: barrou no portão errado — esperava 'permission denied', veio: ${motivo}`);
+    }
+  }
+});
+
+await recusa(
+  "autenticado não-admin NÃO insere post (portão 2: a policy barra)",
+  () =>
+    como("authenticated", ESTRANHO_UID, () =>
+      db.exec(`
+        insert into posts (slug, portal, titulo, resumo, corpo)
+        values ('invasao-logada', 'tecnologia', 'x', 'x', 'x')
+      `),
+    ),
+  "row-level security",
+);
+
+await ok("autenticado não-admin NÃO edita nem apaga (a policy filtra: zero linhas)", async () => {
+  // UPDATE/DELETE com policy de USING não dão erro — só não alcançam linha
+  // nenhuma. Por isso a verificação é no efeito, não na exceção.
+  await como("authenticated", ESTRANHO_UID, () =>
+    db.exec(`
+      update posts set titulo = 'hackeado' where slug = 'troquei-resend-por-brevo';
+      delete from posts where slug = 'troquei-resend-por-brevo';
+    `),
+  );
+  const r = await db.query(
+    "select count(*)::int as n from posts where slug = 'troquei-resend-por-brevo' and titulo <> 'hackeado'",
+  );
+  igual(r.rows[0].n, 1, "post intacto depois da tentativa do não-admin");
+});
+
+await ok("autenticado não-admin lê admins e recebe zero linhas (não 'permission denied')", async () => {
+  const r = await como("authenticated", ESTRANHO_UID, () =>
+    db.query("select count(*)::int as n from admins"),
+  );
+  igual(r.rows[0].n, 0, "linhas de admins pro não-admin");
+});
+
+await recusa(
+  "anônimo nem lê admins: a tabela não tem GRANT pro anon",
+  () => como("anon", null, () => db.query("select count(*) from admins")),
+  "permission denied",
+);
+
+await ok("admin escreve de verdade: edita e apaga", async () => {
+  await como("authenticated", ADMIN_UID, () =>
+    db.exec(`
+      update posts set titulo = 'Rascunho editado pelo admin' where slug = 'rascunho-do-admin';
+      insert into etiquetas (slug, nome) values ('etiqueta-do-teste', 'Etiqueta do teste');
+      delete from etiquetas where slug = 'etiqueta-do-teste';
+    `),
+  );
+  const r = await db.query(
+    "select titulo from posts where slug = 'rascunho-do-admin'",
+  );
+  igual(r.rows[0].titulo, "Rascunho editado pelo admin", "título após o update do admin");
+});
+
+/* ─────── 8. DEC-017 ao vivo: o GRANT é um portão separado da POLICY ─────── */
+
+await ok("sem GRANT o erro é 'permission denied'; com GRANT e policy, linhas voltam", async () => {
+  // Portão 1 fechado: revoga o GRANT. A policy nem chega a ser avaliada.
+  await db.exec("revoke select on posts from anon");
+  let motivo = "";
+  try {
+    await como("anon", null, () => db.query("select count(*) from posts"));
+  } catch (e) {
+    motivo = e.message ?? "";
+  }
+  if (!motivo.toLowerCase().includes("permission denied")) {
+    throw new Error(`esperava 'permission denied' com o GRANT revogado, veio: ${motivo || "nenhum erro"}`);
+  }
+
+  // Portão 1 reaberto: o GRANT volta, e o portão 2 (policy) filtra as linhas.
+  await db.exec("grant select on posts to anon");
+  const r = await como("anon", null, () => db.query("select count(*)::int as n from posts"));
+  if (r.rows[0].n < 1) throw new Error("com GRANT devolvido, o anônimo deveria voltar a ler os publicados");
+});
+
+/* ─────────────────────── 9. trigger atualizado_em ─────────────────────── */
+
+await ok("trigger toca atualizado_em em posts a cada update", async () => {
+  await db.exec(`
+    insert into posts (slug, portal, titulo, resumo, corpo, atualizado_em)
+    values ('teste-trigger', 'tecnologia', 't', 'r', 'c', '2020-01-01T00:00:00Z');
+    update posts set titulo = 'mexido' where slug = 'teste-trigger';
+  `);
+  const r = await db.query(
+    "select (atualizado_em > '2025-01-01'::timestamptz) as tocou from posts where slug = 'teste-trigger'",
+  );
+  igual(r.rows[0].tocou, true, "atualizado_em renovado pelo trigger");
+});
+
+await ok("trigger toca atualizado_em em perfil a cada update", async () => {
+  await db.exec("update perfil set telefone = null where id = 1");
+  const r = await db.query(
+    "select (atualizado_em > now() - interval '5 minutes') as tocou from perfil where id = 1",
+  );
+  igual(r.rows[0].tocou, true, "atualizado_em do perfil renovado pelo trigger");
+});
+
+/* ───────────────────────── 10. sanidade do seed ───────────────────────── */
+
+await ok("o seed publicou 3 posts, todos com etiqueta", async () => {
+  const posts = await db.query(
+    "select count(*)::int as n from posts where publicado_em is not null and publicado_em <= now()",
+  );
+  igual(posts.rows[0].n, 3, "posts publicados pelo seed");
+
+  const sem = await db.query(`
+    select count(*)::int as n from posts p
+     where p.publicado_em is not null and p.publicado_em <= now()
+       and not exists (select 1 from posts_etiquetas pe where pe.post_id = p.id)
+  `);
+  igual(sem.rows[0].n, 0, "post publicado sem nenhuma etiqueta");
+});
+
+await ok("o seed não alistou admin nenhum (DEC-020: alistamento é manual)", async () => {
+  const r = await db.query("select count(*)::int as n from admins where nota <> 'conta de teste do alistamento'");
+  igual(r.rows[0].n, 0, "admins vindos do seed");
 });
 
 /* ───────────────────────────── fecho ───────────────────────────── */

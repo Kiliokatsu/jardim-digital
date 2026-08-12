@@ -60,9 +60,10 @@ HTTP; `fetch` nativo em vez de axios; CSS do Tailwind em vez de biblioteca de
 componentes. Cada dependência a menos é uma pergunta a menos que ele precisa responder —
 e recurso nativo de Next.js é exatamente o que o currículo afirma dominar.
 
-**Prefira a regra no banco à regra na tela.** O interlock de publicação e o `check` de
-`ref_segredo` estão em `schema.sql` de propósito. Isso demonstra "modelagem relacional" e
-"Row Level Security" de um jeito que nenhum componente React demonstra. Quando houver
+**Prefira a regra no banco à regra na tela.** A visibilidade de rascunho, o alistamento
+de admin (`is_admin()`) e os grants explícitos estão em `supabase/migrations/` de
+propósito. Isso demonstra "modelagem relacional" e "Row Level Security" de um jeito que
+nenhum componente React demonstra. Quando houver
 escolha entre garantir algo em TypeScript ou em PostgreSQL, garanta em PostgreSQL — e
 deixe o TypeScript apenas informar o usuário.
 
@@ -118,13 +119,19 @@ Não são erros; são pontas soltas que precisam de decisão do dono.
 - **`react-markdown` + `remark-gfm`** — renderizam o conteúdo dos posts. Justificáveis,
   mas ele precisa saber dizer o que fazem e por que não é `dangerouslySetInnerHTML`
   (resposta curta: XSS).
+- **`shiki`** — colore o código dos posts no servidor (decisão do pacote dragão). A
+  frase de defesa: "o realce acontece no build/render do servidor; o navegador recebe
+  HTML pronto, sem JavaScript de highlighting". O número de linha é CSS counter, não
+  texto — copiar o bloco copia só código.
 - **`@electric-sql/pglite`** — sobe um Postgres em WASM pra `npm run testar-schema`.
   Tecnicamente excelente e muito defensável ("testo as garantias do banco antes de
   aplicar no Supabase"), mas é ferramenta obscura: ele precisa dominar a explicação.
 - **Playwright ausente** — o currículo declara "Playwright (testes E2E)" e este
   repositório não tem nenhum. É a incoerência mais visível pra quem abrir o projeto
-  depois de ler o PDF. Cobrir ao menos os fluxos de login do painel e do interlock de
-  publicação fecharia a lacuna.
+  depois de ler o PDF. Cobrir os fluxos públicos (home, post, modos) fecharia a lacuna.
+- **Painel de administração fora desta branch** — decisão do pacote dragão (DEC-012,
+  fase 2). Publicar é pelo Studio do Supabase até lá. O painel construído antes vive na
+  `main`.
 
 Atualize esta seção quando qualquer um desses itens for resolvido.
 

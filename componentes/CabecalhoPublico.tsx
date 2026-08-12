@@ -1,24 +1,23 @@
 import Link from "next/link";
 import { ChaveEngenheiro, ChavePersona, ChaveTema } from "@/componentes/Chaves";
 
+/* Cabeçalho aprovado nas telas do pacote dragão: marca com o ponto de acento,
+   os três portais, e as chaves de modo. O nome dos portais é a estrutura do
+   site (DEC-001) — não é menu de conveniência, é o mapa. */
+
 const PORTAIS = [
+  { href: "/profissional", rotulo: "Profissional" },
   { href: "/tecnologia", rotulo: "Tecnologia" },
   { href: "/pessoal", rotulo: "Pessoal" },
-  { href: "/profissional", rotulo: "Profissional" },
-  { href: "/grafo", rotulo: "Grafo" },
 ] as const;
 
 export function CabecalhoPublico() {
   return (
-    <header className="sticky top-0 z-20 border-b border-linha bg-fundo/80 backdrop-blur-xl">
-      <div className="mx-auto flex h-16 max-w-[var(--maxw)] items-center gap-4 px-6">
-        <Link href="/" className="flex flex-none items-center gap-2.5 font-extrabold tracking-tight">
-          <span
-            aria-hidden
-            className="h-2.5 w-2.5 flex-none rounded-full bg-acento"
-            style={{ boxShadow: "var(--glow)" }}
-          />
-          Jardim Digital
+    <header className="topo">
+      <div className="mx-auto flex w-full max-w-[var(--maxw)] items-center gap-6 px-6 py-4">
+        <Link href="/" className="marca">
+          <span className="ponto" aria-hidden />
+          Kiliokatsu
         </Link>
 
         <nav className="hidden items-center gap-1 md:flex" aria-label="Portais (menu principal)">
@@ -36,10 +35,10 @@ export function CabecalhoPublico() {
         <div className="flex-1" />
 
         <div className="flex items-center gap-2.5">
-          <ChaveEngenheiro />
-          <span className="hidden lg:contents">
+          <ChaveTema />
+          <span className="hidden sm:contents">
             <ChavePersona />
-            <ChaveTema />
+            <ChaveEngenheiro />
           </span>
         </div>
       </div>
@@ -53,7 +52,7 @@ export function CabecalhoPublico() {
           <Link
             key={p.href}
             href={p.href}
-            className="whitespace-nowrap rounded-full px-3 py-1 text-sm text-suave"
+            className="whitespace-nowrap rounded-full px-3 py-1 text-sm text-suave hover:text-tinta"
           >
             {p.rotulo}
           </Link>
