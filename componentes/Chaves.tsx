@@ -16,8 +16,11 @@ import { useCallback, useMemo, useSyncExternalStore } from "react";
    e o dragão, que observa o mesmo atributo, nem sabe que este arquivo existe.
 
    O prefixo `use` fica em inglês mesmo com o resto em português — é o que o
-   React usa pra reconhecer um hook, e o lint depende disso. */
-function useAtributo(atributo: string, chaveStorage: string, padrao: string) {
+   React usa pra reconhecer um hook, e o lint depende disso.
+
+   Exportado porque o dragão do caos (DEC-0010) observa o mesmo atributo
+   data-persona pra decidir se monta — mesma fonte da verdade, mesma mecânica. */
+export function useAtributo(atributo: string, chaveStorage: string, padrao: string) {
   const inscrever = useCallback(
     (avisar: () => void) => {
       const observador = new MutationObserver(avisar);

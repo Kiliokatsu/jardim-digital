@@ -245,6 +245,28 @@ html[data-engenheiro="1"] [data-campo][data-campo-bloco]::after {
    custa zero. O efeito especial do caos (o dragão saiu — DEC-0008) entra
    quando as referências de animação da DEC-004 forem escolhidas. */
 
+/* o dragão em chamas (DEC-0010): overlay que sobrevoa tudo menos a barra de
+   progresso (z 40). pointer-events: none — ele nunca rouba um clique. O
+   brilho de fogo mora aqui no filter, não no SVG: drop-shadow de CSS vai
+   pro compositor, filtro dentro do SVG re-rasteriza na CPU. */
+.dragao {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 30;
+  pointer-events: none;
+  filter: drop-shadow(0 0 6px rgba(255, 122, 45, 0.55))
+    drop-shadow(0 0 22px rgba(255, 45, 85, 0.35));
+}
+/* cinto e suspensório: o componente já não monta com movimento reduzido,
+   mas a regra de CSS segura qualquer caminho que escape */
+@media (prefers-reduced-motion: reduce) {
+  .dragao {
+    display: none;
+  }
+}
+
 .grao {
   position: fixed;
   inset: 0;
