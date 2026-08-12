@@ -19,7 +19,8 @@ arquivos:
 O slot do efeito especial do caos está vazio desde a DEC-0008 (o dragão canvas não
 renderizou em produção, causa nunca isolada). O dono trouxe pela DEC-004 o código de
 referência que queria — o "Interactive Dragon Cursor" (demo pública do perfil
-@coding.stella no Instagram, disponibilizada para uso livre; cópia em `referencias/`) —
+@coding.stella no Instagram, disponibilizada para uso livre; cópia guardada no vault,
+em `Arquivo/referencia-dragao-cursor/` desde 2026-08-12 — nasceu em `referencias/`) —
 e pediu uma mudança: o dragão deve parecer **em chamas**.
 
 ## Decisão
