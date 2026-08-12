@@ -10,6 +10,7 @@
 | [0006](0006-adocao-do-pacote-dragao.md) | Reconstrução Kiliokatsu: adota o pacote prototipo-dragao como fonte de decisão | 2026-08-11 | aceita | claude |
 | [0007](0007-execucao-da-reconstrucao.md) | Execução da reconstrução: três camadas em paralelo, integradas num dia | 2026-08-11 | aceita | agentes (2) + claude |
 | [0008](0008-remocao-do-dragao.md) | Remover o dragão do modo caos; o efeito especial volta pela DEC-004 | 2026-08-11 | aceita | humano |
+| [0009](0009-playwright-e2e-em-modo-demonstracao.md) | Playwright E2E contra o build de produção, em modo demonstração | 2026-08-12 | aceita | claude |
 
 ---
 

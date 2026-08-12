@@ -126,9 +126,11 @@ Não são erros; são pontas soltas que precisam de decisão do dono.
 - **`@electric-sql/pglite`** — sobe um Postgres em WASM pra `npm run testar-schema`.
   Tecnicamente excelente e muito defensável ("testo as garantias do banco antes de
   aplicar no Supabase"), mas é ferramenta obscura: ele precisa dominar a explicação.
-- **Playwright ausente** — o currículo declara "Playwright (testes E2E)" e este
-  repositório não tem nenhum. É a incoerência mais visível pra quem abrir o projeto
-  depois de ler o PDF. Cobrir os fluxos públicos (home, post, modos) fecharia a lacuna.
+- **`@playwright/test`** — resolvido pela DEC-0009: os fluxos públicos (home, post,
+  modos) têm E2E em `testes/e2e/`, rodando contra o build de produção em modo
+  demonstração (`npm run testar-site`). A frase de defesa: "testo o que o visitante
+  recebe, com o banco desligado de propósito — o teste falha quando eu quebro o site,
+  nunca porque o conteúdo mudou". Falta ainda: rodar em CI antes do merge.
 - **Painel de administração fora desta branch** — decisão do pacote dragão (DEC-012,
   fase 2). Publicar é pelo Studio do Supabase até lá. O painel construído antes vive na
   `main`.
