@@ -60,6 +60,23 @@ indicação aparecer sozinho no fim.
 
 ## Parte 2 — Checklist de retomada (em ordem)
 
+### 0. Corrigir o conteúdo (datas, textos, Profissional)  ← URGENTE, e já dá pra fazer
+
+**Tudo que aparece no site mora no banco, não no código** — e edita-se AGORA pelo
+Table Editor do Supabase, sem esperar o login/painel da fase 2:
+`experiencias` (datas/cargo/resumo), `perfil` (bio/título/e-mail), `formacao`,
+`habilidades`, `perfil_links`. Clicou na célula, corrigiu, Enter — o site
+atualiza sozinho em até 5 min.
+
+⚠ **Pegadinha**: o preview no Vercel ainda mostra os dados de DEMONSTRAÇÃO
+(gravados no código), porque as variáveis de ambiente não estão lá. Para ver as
+correções do banco no preview: Vercel → Settings → Environment Variables →
+adicionar as duas `NEXT_PUBLIC_*` marcando SÓ o ambiente **Preview** (a main em
+produção continua intocada) → Redeploy da branch.
+
+*As datas do seed foram estimadas na migração — os erros são esperados, não
+acidente. Alternativa: mandar as informações corretas pro Claude atualizar via API.*
+
 ### 1. Links reais dos botões do rodapé  ← rápido, pode ser o primeiro
 
 No Table Editor → `perfil_links`, edite as 2 linhas existentes:
