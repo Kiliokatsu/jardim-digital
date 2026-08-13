@@ -15,6 +15,7 @@
 | [0011](0011-caos-contido-avisa-na-tela.md) | Quando o sistema reduz movimento, ligar o caos mostra um aviso na tela | 2026-08-12 | aceita | claude |
 | [0012](0012-dragao-proporcional-a-tela.md) | O dragão ganha proporção em relação à tela, aplicada no laço de animação | 2026-08-12 | aceita | claude |
 | [0013](0013-painel-console-no-cliente.md) | Fase 2 começa: o painel é um console no cliente — sessão no navegador, segurança na RLS | 2026-08-12 | aceita | claude |
+| [0014](0014-ciclo-de-vida-do-post-no-painel.md) | O ciclo de vida do post inteiro no painel: editar, publicar, agendar e despublicar são UPDATEs sob RLS | 2026-08-13 | aceita | claude |
 
 ---
 

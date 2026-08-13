@@ -1,25 +1,27 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabaseLigado } from "@/lib/config";
 import { supabasePainel } from "@/lib/supabase/painel";
+import { EditorPost, type PostEditavel } from "@/componentes/painel/EditorPost";
 import type { Portal } from "@/lib/tipos";
 import { dataHora } from "@/lib/formato";
 
-/* O console da fase 2 (DEC-0013), primeira entrega: autenticação + fila de
-   rascunhos em leitura.
+/* O console da fase 2 (DEC-0013 + DEC-0014): autenticação, fila de
+   rascunhos, posts no ar, e o editor que opera o interruptor publicado_em.
 
    A tela tem quatro estados e NENHUM deles é segurança — são informação.
    Quem autoriza é a RLS: um não-admin que burlar todos os estados daqui
    recebe recusa do banco em qualquer escrita (DEC-020, testado). */
 
-type Rascunho = {
+type PostResumo = {
   id: string;
   slug: string;
   titulo: string;
   portal: Portal;
   atualizado_em: string;
+  publicado_em: string | null;
 };
 
 type Estado =
@@ -35,7 +37,8 @@ export function ConsolePainel() {
     supabaseLigado ? "carregando" : "sem-banco",
   );
   const [sessao, setSessao] = useState<Session | null>(null);
-  const [rascunhos, setRascunhos] = useState<Rascunho[]>([]);
+  const [posts, setPosts] = useState<PostResumo[]>([]);
+  const [editando, setEditando] = useState<PostEditavel | null>(null);
   const [erro, setErro] = useState<string | null>(null);
 
   /* Sessão: uma leitura inicial + inscrição nas mudanças (login, logout,
@@ -60,6 +63,23 @@ export function ConsolePainel() {
       vivo = false;
       inscricao.subscription.unsubscribe();
     };
+  }, []);
+
+  /* Uma consulta, duas listas (DEC-0014): o admin lê tudo pela POLICY
+     própria e o console separa em memória — um caminho de código só. */
+  const carregarPosts = useCallback(async () => {
+    const sb = supabasePainel();
+    if (!sb) return;
+    const { data, error } = await sb
+      .from("posts")
+      .select("id, slug, titulo, portal, atualizado_em, publicado_em")
+      .order("atualizado_em", { ascending: false })
+      .returns<PostResumo[]>();
+    if (error) {
+      setErro(`a lista não carregou: ${error.message}`);
+      return;
+    }
+    setPosts(data ?? []);
   }, []);
 
   /* Alistamento: a MESMA função que as POLICYs usam decide o que a tela
@@ -87,22 +107,13 @@ export function ConsolePainel() {
         setEstado("nao-alistado");
         return;
       }
-
-      const { data, error: erroFila } = await sb
-        .from("posts")
-        .select("id, slug, titulo, portal, atualizado_em")
-        .is("publicado_em", null)
-        .order("atualizado_em", { ascending: false })
-        .returns<Rascunho[]>();
-      if (cancelado) return;
-      if (erroFila) setErro(`a fila não carregou: ${erroFila.message}`);
-      setRascunhos(data ?? []);
-      setEstado("alistado");
+      await carregarPosts();
+      if (!cancelado) setEstado("alistado");
     })();
     return () => {
       cancelado = true;
     };
-  }, [usuarioId]);
+  }, [usuarioId, carregarPosts]);
 
   const entrar = useCallback(() => {
     const sb = supabasePainel();
@@ -118,6 +129,85 @@ export function ConsolePainel() {
     // sessões dos outros aparelhos do admin (o padrão da lib é global)
     void supabasePainel()?.auth.signOut({ scope: "local" });
   }, []);
+
+  /* As três âncoras contra corrida e perda de edição (achados da revisão):
+     - ultimoPedido: um clique mais novo invalida a resposta do mais velho;
+     - editandoId: qual post o operador REALMENTE está olhando agora;
+     - sujo: o editor avisa quando há mudança não salva. Refs, não estado —
+       são leitura de dentro de closures assíncronas, não coisa de render. */
+  const ultimoPedido = useRef(0);
+  const editandoId = useRef<string | null>(null);
+  const sujo = useRef(false);
+  const aoSujar = useCallback((v: boolean) => {
+    sujo.current = v;
+  }, []);
+
+  /* Abrir busca o post inteiro na hora do clique — o corpo (pesado) não
+     viaja na listagem, e o editor sempre nasce do dado mais fresco. */
+  const abrir = useCallback(async (id: string) => {
+    if (
+      editandoId.current !== null &&
+      editandoId.current !== id &&
+      sujo.current &&
+      !window.confirm("Há edição não salva. Trocar de post e descartar?")
+    ) {
+      return;
+    }
+    const sb = supabasePainel();
+    if (!sb) return;
+    const pedido = ++ultimoPedido.current;
+    editandoId.current = id;
+    sujo.current = false;
+    const { data, error } = await sb
+      .from("posts")
+      .select("id, slug, portal, titulo, resumo, corpo, tem_indicacao, publicado_em")
+      .eq("id", id)
+      .maybeSingle();
+    if (pedido !== ultimoPedido.current) return; // um clique mais novo venceu
+    if (error || !data) {
+      setErro(`não consegui abrir o post: ${error?.message ?? "não encontrado"}`);
+      return;
+    }
+    setEditando(data as PostEditavel);
+  }, []);
+
+  const fechar = useCallback(() => {
+    if (sujo.current && !window.confirm("Há edição não salva. Fechar e descartar?")) return;
+    editandoId.current = null;
+    sujo.current = false;
+    setEditando(null);
+  }, []);
+
+  /* Depois de qualquer escrita do editor: listas novas e, SE o post que
+     escreveu ainda é o que está aberto, versão fresca dele (publicar muda
+     os botões do rodapé). O id vem do editor — não de closure velha. */
+  const aoMudar = useCallback(
+    (id: string) => {
+      void carregarPosts();
+      if (editandoId.current === id) void abrir(id);
+    },
+    [carregarPosts, abrir],
+  );
+
+  const rascunhos = posts.filter((p) => p.publicado_em === null);
+  const publicados = posts.filter((p) => p.publicado_em !== null);
+
+  const linha = (p: PostResumo) => (
+    <li key={p.id}>
+      <button
+        type="button"
+        onClick={() => void abrir(p.id)}
+        className="flex w-full flex-wrap items-baseline gap-x-4 gap-y-1 rounded-[var(--r)] border border-linha bg-superficie px-4 py-3 text-left transition-colors hover:border-acento/50"
+      >
+        <span className="font-mono text-[11px] uppercase text-suave">{p.portal}</span>
+        <strong className="text-sm">{p.titulo}</strong>
+        <span className="flex-1" />
+        <span className="font-mono text-[11px] text-suave">
+          {p.publicado_em ? `no ar desde ${dataHora(p.publicado_em)}` : `mexido em ${dataHora(p.atualizado_em)}`}
+        </span>
+      </button>
+    </li>
+  );
 
   return (
     <main className="mx-auto w-full max-w-[var(--maxw)] px-6 py-10">
@@ -173,46 +263,46 @@ export function ConsolePainel() {
       )}
 
       {estado === "alistado" && (
-        <section>
-          <div className="mb-4 flex items-baseline gap-3">
-            <h2 className="font-semibold">Fila de rascunhos</h2>
-            <span className="font-mono text-xs text-suave">
-              {rascunhos.length === 0
-                ? "vazia"
-                : `${rascunhos.length} aguardando`}
-            </span>
-          </div>
+        <>
+          <section>
+            <div className="mb-4 flex items-baseline gap-3">
+              <h2 className="font-semibold">Fila de rascunhos</h2>
+              <span className="font-mono text-xs text-suave">
+                {rascunhos.length === 0 ? "vazia" : `${rascunhos.length} aguardando`}
+              </span>
+            </div>
+            {rascunhos.length === 0 ? (
+              <p className="rounded-[var(--r)] border border-dashed border-linha px-4 py-6 text-sm text-suave">
+                Nenhum rascunho aguardando. Quando o agente redator entregar — ou você
+                criar um pelo Studio — ele aparece aqui.
+              </p>
+            ) : (
+              <ul className="flex flex-col gap-2">{rascunhos.map(linha)}</ul>
+            )}
+          </section>
 
-          {rascunhos.length === 0 ? (
-            <p className="rounded-[var(--r)] border border-dashed border-linha px-4 py-6 text-sm text-suave">
-              Nenhum rascunho aguardando. Quando o agente redator entregar — ou você
-              criar um pelo Studio — ele aparece aqui.
-            </p>
-          ) : (
-            <ul className="flex flex-col gap-2">
-              {rascunhos.map((r) => (
-                <li
-                  key={r.id}
-                  className="flex flex-wrap items-baseline gap-x-4 gap-y-1 rounded-[var(--r)] border border-linha bg-superficie px-4 py-3"
-                >
-                  <span className="font-mono text-[11px] uppercase text-suave">
-                    {r.portal}
-                  </span>
-                  <strong className="text-sm">{r.titulo}</strong>
-                  <span className="flex-1" />
-                  <span className="font-mono text-[11px] text-suave">
-                    mexido em {dataHora(r.atualizado_em)}
-                  </span>
-                </li>
-              ))}
-            </ul>
+          <section className="mt-10">
+            <div className="mb-4 flex items-baseline gap-3">
+              <h2 className="font-semibold">No ar</h2>
+              <span className="font-mono text-xs text-suave">
+                {publicados.length === 0 ? "nada ainda" : `${publicados.length} publicados`}
+              </span>
+            </div>
+            {publicados.length > 0 && (
+              <ul className="flex flex-col gap-2">{publicados.map(linha)}</ul>
+            )}
+          </section>
+
+          {editando && (
+            <EditorPost
+              key={editando.id}
+              post={editando}
+              aoFechar={fechar}
+              aoMudar={aoMudar}
+              aoSujar={aoSujar}
+            />
           )}
-
-          <p className="mt-6 text-xs text-suave">
-            Próximos incrementos: abrir o rascunho, editar, aprovar/agendar/publicar,
-            e a manutenção do currículo — cada um com sua DEC.
-          </p>
-        </section>
+        </>
       )}
     </main>
   );
