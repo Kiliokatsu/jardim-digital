@@ -5,6 +5,7 @@ import type { Session } from "@supabase/supabase-js";
 import { supabaseLigado } from "@/lib/config";
 import { supabasePainel } from "@/lib/supabase/painel";
 import { EditorPost, type PostEditavel } from "@/componentes/painel/EditorPost";
+import { Pautas } from "@/componentes/painel/Pautas";
 import type { Portal } from "@/lib/tipos";
 import { dataHora } from "@/lib/formato";
 
@@ -292,6 +293,10 @@ export function ConsolePainel() {
               <ul className="flex flex-col gap-2">{publicados.map(linha)}</ul>
             )}
           </section>
+
+          {/* a entrada do pipeline (DEC-0016) fica por último: o dia a dia
+              é aprovar o que chegou; pedir conteúdo novo é gesto ocasional */}
+          <Pautas />
 
           {editando && (
             <EditorPost
