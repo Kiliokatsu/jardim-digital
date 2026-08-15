@@ -17,6 +17,7 @@
 | [0013](0013-painel-console-no-cliente.md) | Fase 2 começa: o painel é um console no cliente — sessão no navegador, segurança na RLS | 2026-08-12 | aceita | claude |
 | [0014](0014-ciclo-de-vida-do-post-no-painel.md) | O ciclo de vida do post inteiro no painel: editar, publicar, agendar e despublicar são UPDATEs sob RLS | 2026-08-13 | aceita | claude |
 | [0015](0015-automacao-painel-controla-n8n-executa.md) | Automação: o painel controla, o n8n executa, e segredo não mora em tabela | 2026-08-13 | proposta | claude |
+| [0016](0016-tabelas-da-automacao.md) | As tabelas da automação: pautas, divulgacoes e a coluna formato | 2026-08-15 | aceita | claude |
 
 ---
 
