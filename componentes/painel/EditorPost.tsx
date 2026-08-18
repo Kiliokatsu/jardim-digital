@@ -62,11 +62,26 @@ export function EditorPost({
     aoSujar(sujo);
   }, [sujo, aoSujar]);
 
+  /* O banco garante NOT NULL, não "não vazio" — string em branco passa na
+     constraint e na RLS. Publicar post sem título é um clique de distração;
+     esta guarda barra antes do UPDATE sair (DEC-0018). */
+  function campoVazio(): string | null {
+    if (!campos.titulo.trim()) return "o título não pode ficar vazio.";
+    if (!campos.resumo.trim()) return "o resumo não pode ficar vazio.";
+    if (!campos.corpo.trim()) return "o corpo não pode ficar vazio.";
+    return null;
+  }
+
   /* Toda escrita passa por aqui: um UPDATE, o aviso de resultado, e o
      console recarrega. O `select` no fim devolve as linhas de fato tocadas —
      e ZERO linhas é falha silenciosa (RLS filtrou, ou o post sumiu), não
      sucesso: a revisão pegou que o Postgres não dá erro nesse caso. */
   async function atualizar(mudanca: Record<string, unknown>, feito: string) {
+    const pendencia = campoVazio();
+    if (pendencia) {
+      setAviso(pendencia);
+      return;
+    }
     const sb = supabasePainel();
     if (!sb) return;
     setOcupado(true);
@@ -97,6 +112,12 @@ export function EditorPost({
   const agendar = () => {
     if (!agendarPara) {
       setAviso("escolha a data e a hora antes de agendar.");
+      return;
+    }
+    /* data no passado não é "agendar", é publicar na hora (a RLS considera
+       publicado_em <= now() como no ar) — e o rótulo "agendado." mentiria */
+    if (new Date(agendarPara).getTime() <= Date.now()) {
+      setAviso("essa data já passou — o post entraria no ar agora. Use publicar agora, ou escolha uma data futura.");
       return;
     }
     // datetime-local vem sem fuso: Date() lê como hora local e o ISO leva o fuso junto

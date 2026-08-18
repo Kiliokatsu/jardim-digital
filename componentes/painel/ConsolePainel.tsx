@@ -50,11 +50,22 @@ export function ConsolePainel() {
     if (!sb) return; // estado já nasceu "sem-banco" no useState
 
     let vivo = true;
-    sb.auth.getSession().then(({ data }) => {
-      if (!vivo) return;
-      setSessao(data.session);
-      if (!data.session) setEstado("deslogado");
-    });
+    sb.auth
+      .getSession()
+      .then(({ data }) => {
+        if (!vivo) return;
+        setSessao(data.session);
+        if (!data.session) setEstado("deslogado");
+      })
+      .catch((e: unknown) => {
+        /* sem isto, uma rejeição (storage inacessível, lock travado) deixaria
+           a tela presa em "conferindo a sessão…" para sempre (DEC-0018) */
+        if (!vivo) return;
+        setErro(
+          `não consegui conferir a sessão: ${e instanceof Error ? e.message : String(e)}`,
+        );
+        setEstado("deslogado");
+      });
 
     const { data: inscricao } = sb.auth.onAuthStateChange((_evento, novaSessao) => {
       setSessao(novaSessao);
