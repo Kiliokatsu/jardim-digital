@@ -10,6 +10,14 @@
 | [0006](0006-adocao-do-pacote-dragao.md) | Reconstrução Kiliokatsu: adota o pacote prototipo-dragao como fonte de decisão | 2026-08-11 | aceita | claude |
 | [0007](0007-execucao-da-reconstrucao.md) | Execução da reconstrução: três camadas em paralelo, integradas num dia | 2026-08-11 | aceita | agentes (2) + claude |
 | [0008](0008-remocao-do-dragao.md) | Remover o dragão do modo caos; o efeito especial volta pela DEC-004 | 2026-08-11 | aceita | humano |
+| [0009](0009-playwright-e2e-em-modo-demonstracao.md) | Playwright E2E contra o build de produção, em modo demonstração | 2026-08-12 | aceita | claude |
+| [0010](0010-dragao-svg-em-chamas.md) | O dragão do caos volta em SVG, em chamas — não em canvas | 2026-08-12 | aceita | claude |
+| [0011](0011-caos-contido-avisa-na-tela.md) | Quando o sistema reduz movimento, ligar o caos mostra um aviso na tela | 2026-08-12 | aceita | claude |
+| [0012](0012-dragao-proporcional-a-tela.md) | O dragão ganha proporção em relação à tela, aplicada no laço de animação | 2026-08-12 | aceita | claude |
+| [0013](0013-painel-console-no-cliente.md) | Fase 2 começa: o painel é um console no cliente — sessão no navegador, segurança na RLS | 2026-08-12 | aceita | claude |
+| [0014](0014-ciclo-de-vida-do-post-no-painel.md) | O ciclo de vida do post inteiro no painel: editar, publicar, agendar e despublicar são UPDATEs sob RLS | 2026-08-13 | aceita | claude |
+| [0015](0015-automacao-painel-controla-n8n-executa.md) | Automação: o painel controla, o n8n executa, e segredo não mora em tabela | 2026-08-13 | proposta | claude |
+| [0016](0016-tabelas-da-automacao.md) | As tabelas da automação: pautas, divulgacoes e a coluna formato | 2026-08-15 | aceita | claude |
 
 ---
 

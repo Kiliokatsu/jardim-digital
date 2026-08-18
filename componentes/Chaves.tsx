@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useMemo, useSyncExternalStore } from "react";
+import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
+import { AvisoContido } from "@/componentes/caos/AvisoContido";
 
 /* As chaves do cabeçalho. Cada uma escreve um atributo no <html> e guarda a
    escolha no localStorage — mesma mecânica do protótipo, só que tipada.
@@ -16,8 +17,11 @@ import { useCallback, useMemo, useSyncExternalStore } from "react";
    e o dragão, que observa o mesmo atributo, nem sabe que este arquivo existe.
 
    O prefixo `use` fica em inglês mesmo com o resto em português — é o que o
-   React usa pra reconhecer um hook, e o lint depende disso. */
-function useAtributo(atributo: string, chaveStorage: string, padrao: string) {
+   React usa pra reconhecer um hook, e o lint depende disso.
+
+   Exportado porque o dragão do caos (DEC-0010) observa o mesmo atributo
+   data-persona pra decidir se monta — mesma fonte da verdade, mesma mecânica. */
+export function useAtributo(atributo: string, chaveStorage: string, padrao: string) {
   const inscrever = useCallback(
     (avisar: () => void) => {
       const observador = new MutationObserver(avisar);
@@ -106,20 +110,39 @@ export function ChaveTema() {
 
 export function ChavePersona() {
   const [persona, trocar] = useAtributo("data-persona", "persona", "normal");
+  const [avisarContido, setAvisarContido] = useState(false);
+  // identidade estável: o relógio de auto-fechar do aviso depende desta função
+  const fecharAviso = useCallback(() => setAvisarContido(false), []);
+
+  /* DEC-0011: o aviso responde ao GESTO de ligar o caos, não à visita — e a
+     consulta é a mesma que segura o dragão, uma fonte da verdade só. Voltar
+     pro normal recolhe o aviso na hora: mensagem sobre o caos não pode
+     sobreviver à saída do caos. */
+  const aoTrocar = (novo: string) => {
+    trocar(novo);
+    setAvisarContido(
+      novo === "caos" &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+    );
+  };
+
   return (
-    <Chave
-      rotulo="Persona"
-      valor={persona}
-      ao={trocar}
-      opcoes={[
-        { v: "normal", rotulo: "Normal" },
-        {
-          v: "caos",
-          rotulo: "Caos",
-          titulo: "O mesmo site, com o fogo aceso — e um dragão atrás do cursor",
-        },
-      ]}
-    />
+    <>
+      <Chave
+        rotulo="Persona"
+        valor={persona}
+        ao={aoTrocar}
+        opcoes={[
+          { v: "normal", rotulo: "Normal" },
+          {
+            v: "caos",
+            rotulo: "Caos",
+            titulo: "O mesmo site, com o fogo aceso — e um dragão atrás do cursor",
+          },
+        ]}
+      />
+      {avisarContido && <AvisoContido aoFechar={fecharAviso} />}
+    </>
   );
 }
 
