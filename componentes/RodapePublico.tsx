@@ -12,12 +12,16 @@ function urlSegura(url: string): string | null {
   }
 }
 
-/* Rodapé em toda página com o nome completo — é uma das quatro mitigações da
-   DEC-008: a marca é Kiliokatsu, mas o recrutador precisa cruzar o site com o
-   LinkedIn sem esforço.
+/* O rodapé de dois andares da v2 (espec §5), em toda tela pública:
 
-   A fita de instrumentação só aparece com o Modo Engenheiro ligado: quem virou
-   a chave termina a página sabendo de quando é o build e de onde vem o dado. */
+   1º andar — contato: o selo pequeno (nunca menor que 34px — abaixo disso o
+   anel vira textura), uma chamada curta e botões-LINK diretos, sem
+   formulário. O nome completo continua aqui: é uma das mitigações da
+   DEC-008 (a marca é Kiliokatsu, o currículo é da pessoa).
+
+   2º andar — instrumentação: uma linha mono, agora SEMPRE visível
+   (DEC-0021 — o Modo Engenheiro saiu; contar de onde vem o dado deixou de
+   ser segredo de chave e virou assinatura da casa). */
 
 export function RodapePublico({
   perfil, links, telemetria,
@@ -28,24 +32,22 @@ export function RodapePublico({
 }) {
   return (
     <footer className="mt-24 border-t border-linha">
-      <div className="so-engenheiro border-b border-linha bg-superficie-2">
-        <div className="mx-auto flex max-w-[var(--maxw)] flex-wrap items-center gap-x-6 gap-y-2 px-6 py-3 font-mono text-[11px] text-suave">
-          <span className="font-semibold text-acento">instrumentação</span>
-          <span>posts <b className="text-tinta">{telemetria.posts}</b></span>
-          <span>etiquetas <b className="text-tinta">{telemetria.etiquetas}</b></span>
-          <span>tecnologia <b className="text-tinta">{telemetria.porPortal.tecnologia}</b></span>
-          <span>pessoal <b className="text-tinta">{telemetria.porPortal.pessoal}</b></span>
-          <span>build <b className="text-tinta">{dataHora(telemetria.build)}</b></span>
-          <span className="text-linha" aria-hidden>|</span>
-          <span>fonte: postgres via supabase, rls ligada</span>
+      <div className="mx-auto flex max-w-[var(--maxw)] flex-col gap-6 px-6 py-10 sm:flex-row sm:items-center">
+        <div className="flex items-center gap-4">
+          {/* eslint-disable-next-line @next/next/no-img-element -- SVG da marca: next/image não otimiza vetor */}
+          <img src="/marca/selo/selo-escuro.svg" alt="" aria-hidden className="selo-rodape marca-escuro" />
+          {/* eslint-disable-next-line @next/next/no-img-element -- par claro do mesmo selo */}
+          <img src="/marca/selo/selo-claro.svg" alt="" aria-hidden className="selo-rodape marca-claro" />
+          <div>
+            <p className="font-semibold">Tem um sistema pra tirar do papel?</p>
+            <p className="text-sm text-suave">
+              {perfil.nome_completo} · {perfil.titulo}
+            </p>
+          </div>
         </div>
-      </div>
 
-      <div className="mx-auto flex max-w-[var(--maxw)] flex-col gap-5 px-6 py-10 sm:flex-row sm:items-center">
-        <div className="flex-1">
-          <p className="font-semibold">{perfil.nome_completo}</p>
-          <p className="text-sm text-suave">{perfil.titulo}</p>
-        </div>
+        <div className="flex-1" />
+
         <div className="flex flex-wrap gap-2">
           {links.map((l) => {
             const href = urlSegura(l.url);
@@ -73,8 +75,17 @@ export function RodapePublico({
         </div>
       </div>
 
-      <div className="mx-auto max-w-[var(--maxw)] px-6 pb-8">
-        <p className="text-xs text-suave">Kiliokatsu é o nome do site. O currículo é meu.</p>
+      <div className="border-t border-linha">
+        <div className="mx-auto flex max-w-[var(--maxw)] flex-wrap items-center gap-x-5 gap-y-1 px-6 py-3 font-mono text-[11px] text-pedra">
+          <span>posts {telemetria.posts}</span>
+          <span>etiquetas {telemetria.etiquetas}</span>
+          <span>build {dataHora(telemetria.build)}</span>
+          <span>fonte: postgres via supabase, rls ligada</span>
+        </div>
+      </div>
+
+      <div className="mx-auto max-w-[var(--maxw)] px-6 pb-8 pt-3">
+        <p className="text-xs text-pedra">Kiliokatsu é o nome do site. O currículo é meu.</p>
       </div>
     </footer>
   );

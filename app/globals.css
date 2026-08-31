@@ -1,97 +1,101 @@
 @import "tailwindcss";
 
 /* ═══════════════════════════════════════════════════════════════════════
-   Jardim Digital — folha de tokens e classes das telas aprovadas
-   Direção A "Terminal Noturno" (DEC-024), portada do protótipo em telas/.
+   Kiliokatsu v2 — folha de tokens da reconstrução (DEC-0021)
+   Paleta e tipografia da ESPEC-kiliokatsu §3–4: rubro neon sobre escuro
+   quase-preto; claro "osso", nunca branco puro. Fraunces é a voz, Inter é
+   a interface, IBM Plex Mono é o metadado.
 
-   Duas dimensões independentes no <html>, restauradas do localStorage
-   por um script inline no layout ANTES da primeira pintura:
-     data-tema        escuro | claro     (escuro é o padrão — e o :root)
-     data-persona     normal | caos
-   E uma chave de instrumentação:
-     data-engenheiro  0 | 1              expõe o schema por trás da tela
+   Uma dimensão no <html>, restaurada do localStorage por script inline no
+   layout ANTES da primeira pintura:
+     data-tema   escuro | claro   (escuro é o padrão — e o :root)
 
-   Disciplina do modo caos (DEC-003-b): a camada caos só mexe em
-   INTENSIDADE — cor, brilho, granulado, velocidade. Nenhuma regra de
-   posição, largura, grid ou display muda entre normal e caos. Se o
-   inspetor mostrar o contrário, é bug.
+   Regra de uso da cor (espec §3.3): o acento aparece POUCO — palavra-chave
+   do título, botão primário, link de ação, marcador ativo. Se mais de 10%
+   da tela está vermelha, está errado. O verde é semântico e só existe no
+   Ganhei/Perdi e no status do executor. Nunca em outro lugar.
+
+   O Modo Caos saiu (DEC-0021): volta um dia como TERCEIRO conjunto de
+   tokens, não como camada de intensidade. --glow e --speed ficaram porque
+   as transições os usam; hoje são constantes.
    ═══════════════════════════════════════════════════════════════════════ */
 
 :root {
   /* As famílias chegam por variáveis do next/font definidas no layout.
      O fallback existe só para o flash entre o CSS chegar e a fonte carregar. */
   --sans: var(--fonte-texto, "Inter", system-ui, -apple-system, sans-serif);
-  --mono: var(--fonte-mono, "JetBrains Mono", ui-monospace, monospace);
-  --serifa: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --mono: var(--fonte-mono, "IBM Plex Mono", ui-monospace, monospace);
+  --display: var(--fonte-display, "Fraunces", Georgia, serif);
+  /* nome antigo, mantido como sinônimo enquanto as telas migram */
+  --serifa: var(--display);
 
-  --r: 12px;
-  --maxw: 1040px;
+  --r: 10px;
+  --maxw: 1100px;
 
   /* A medida mais importante da página de leitura: 68 caracteres por
      linha. Abaixo de ~50 o olho pula demais; acima de ~80 ele perde a
      linha na volta. */
   --coluna: 68ch;
 
-  /* intensidade — o modo caos escreve por cima destes três */
   --glow: none;
-  --grain-op: 0;
   --speed: 0.2s;
 
   /* escuro é o tema padrão, então mora no :root e não atrás de atributo:
      assim a primeira pintura já sai certa mesmo antes do script inline */
-  --bg: #0b1220;
-  --bg2: #0b1220;
-  --surface: #111c2e;
-  --surface-2: #16233a;
-  --text: #e6edf7;
-  --muted: #8fa3bf;
-  --accent: #d9424a;
-  --accent-soft: rgba(217, 66, 74, 0.13);
-  --gelo: #7bbddd;
-  --border: rgba(255, 255, 255, 0.09);
-  --codigo-fundo: #080d18;
-  --ok: #3fb950;
-  --warn: #d29922;
-  --erro: #f85149;
+  --bg: #09090b;
+  --bg2: #09090b;
+  --surface: #140a0e; /* vinho profundo — os cards */
+  --surface-2: #0d0d10; /* blocos de código, itens de fila */
+  --text: #f4f4f5;
+  --muted: #a1a1aa;
+  --pedra: #71717a; /* metadado, texto terciário */
+  --accent: #ff2e4c; /* rubro neon: só título-chave, botão, link de ação */
+  --accent-hover: #c1223a;
+  --accent-soft: rgba(255, 46, 76, 0.13);
+  --vinho: #8b0f23; /* bordas de destaque, detalhes */
+  --border: #26262b;
+  --tag-fundo: #2a1208;
+  --tag-texto: #fdba74; /* âmbar — tags e detalhes quentes */
+  --codigo-fundo: #0d0d10;
 
-  /* maturidade da nota — o eixo do jardim */
-  --semente: #7fa86b;
-  --muda: #4e9a6e;
-  --perene: #2e7d6b;
+  /* verde SEMÂNTICO (espec §3.3): só Ganhei/Perdi e "executor on-line" */
+  --ok: #4ade80;
+  --ok-fundo: #0c1410;
+  --ok-borda: #1d3a2a;
+  --warn: #f97316;
+  --erro: #ff2e4c;
+
+  /* legado da v1, mantido só até as telas antigas serem reconstruídas:
+     --gelo era o azul dos links do corpo; vira o âmbar quente da v2.
+     As três cores de maturidade do jardim viram neutro — o conceito saiu. */
+  --gelo: var(--tag-texto);
+  --semente: var(--pedra);
+  --muda: var(--pedra);
+  --perene: var(--pedra);
 }
 
 html[data-tema="claro"] {
-  --bg: #f7f8fb;
-  --bg2: #f7f8fb;
-  --surface: #ffffff;
-  --surface-2: #f0f2f7;
-  --text: #101828;
-  --muted: #5a6b85;
-  --accent: #c0323c;
-  --accent-soft: rgba(192, 50, 60, 0.08);
-  --gelo: #1f6f98;
-  --border: rgba(16, 24, 40, 0.12);
-  --codigo-fundo: #f6f8fc;
+  --bg: #faf8f5; /* osso — quente, nunca branco puro */
+  --bg2: #faf8f5;
+  --surface: #ffffff; /* cards flutuam sobre o osso */
+  --surface-2: #f4f1ec;
+  --text: #1c1917; /* preto quente */
+  --muted: #57534e;
+  --pedra: #78716c;
+  --accent: #c1121f; /* rubro profundo — o neon falha contraste no claro */
+  --accent-hover: #8b0f23;
+  --accent-soft: rgba(193, 18, 31, 0.08);
+  --vinho: #8b0f23;
+  --border: #e5e0d8;
+  --borda-marca: #e9d5d3; /* rosé: borda de card em destaque */
+  --tag-fundo: #f5e9dc;
+  --tag-texto: #8b4513; /* terracota */
+  --codigo-fundo: #f4f1ec;
   --ok: #1a7f37;
+  --ok-fundo: #f0f7f1;
+  --ok-borda: #cde8d3;
   --warn: #9a6700;
   --erro: #cf222e;
-}
-
-/* Modo caos: só intensidade. O acento esquenta, o brilho liga, o
-   granulado aparece, a transição acelera. DEC-014: os MESMOS valores
-   valem no claro — caos não é um tema, é um estado. */
-html[data-persona="caos"] {
-  --glow: 0 0 26px var(--accent);
-  --grain-op: 0.05;
-  --speed: 0.12s;
-  --accent: #ff2d55;
-  --accent-soft: rgba(255, 45, 85, 0.14);
-}
-/* No escuro o fundo afunda um degrau — cor, não layout */
-html[data-persona="caos"]:not([data-tema="claro"]) {
-  --bg: #050814;
-  --surface: #0c1330;
-  --border: rgba(255, 45, 85, 0.2);
 }
 
 /* O painel é console de supervisão: mais denso, raio mais apertado.
@@ -116,6 +120,10 @@ html[data-persona="caos"]:not([data-tema="claro"]) {
   --color-acento-fraco: var(--accent-soft);
   --color-linha: var(--border);
   --color-gelo: var(--gelo);
+  --color-vinho: var(--vinho);
+  --color-pedra: var(--pedra);
+  --color-tag-fundo: var(--tag-fundo);
+  --color-tag-texto: var(--tag-texto);
   --color-ok: var(--ok);
   --color-alerta: var(--warn);
   --color-erro: var(--erro);
@@ -125,6 +133,7 @@ html[data-persona="caos"]:not([data-tema="claro"]) {
 
   --font-sans: var(--sans);
   --font-serif: var(--serifa);
+  --font-display: var(--display);
   --font-mono: var(--mono);
 
   --radius-token: var(--r);
@@ -145,6 +154,15 @@ body {
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
   transition: background var(--speed) ease, color var(--speed) ease;
+}
+
+/* A voz da v2: todo heading fala em Fraunces (espec §4). A interface
+   continua em Inter porque parágrafo de UI não é leitura longa. */
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--display);
 }
 
 a {
@@ -180,188 +198,54 @@ a {
   padding: 0 32px;
 }
 
-/* Auréola de fundo do jardim. Elemento próprio em vez de body::before:
-   só quem a renderiza paga por ela. */
-.aura {
-  position: fixed;
-  inset: 0;
-  z-index: -2;
-  pointer-events: none;
-  background:
-    radial-gradient(900px 500px at 12% -8%, var(--accent-soft), transparent 60%),
-    radial-gradient(800px 480px at 88% 4%, rgba(90, 120, 255, 0.1), transparent 62%),
-    linear-gradient(160deg, var(--bg), var(--bg2));
-}
+/* ───────────────────── a marca (espec §11, DEC-0021) ─────────────────────
+   Os SVGs vivem em /marca/ com par claro/escuro. O par inteiro vai pro DOM
+   e o atributo do <html> decide qual pinta — zero JavaScript na troca,
+   mesma mecânica do resto do tema. */
 
-/* ───────────────────── Modo Engenheiro ─────────────────────
-   Desligado, some inteiro: nenhum reflow, nenhum espaço reservado.
-   Ligado, cada elemento com data-campo ganha a etiqueta da coluna
-   que o alimenta, e os blocos .so-engenheiro aparecem. */
-
-.so-engenheiro {
-  display: none;
-}
-html[data-engenheiro="1"] .so-engenheiro {
-  display: revert;
-}
-
-[data-campo]::after {
-  content: attr(data-campo);
-  display: none;
-}
-html[data-engenheiro="1"] [data-campo] {
-  position: relative;
-  outline: 1px dashed color-mix(in srgb, var(--accent) 45%, transparent);
-  outline-offset: 3px;
-  border-radius: 3px;
-}
-html[data-engenheiro="1"] [data-campo]::after {
+.marca-escuro {
   display: inline-block;
-  margin-left: 6px;
-  padding: 1px 5px;
-  font-family: var(--mono);
-  font-size: 10px;
-  line-height: 1.5;
-  font-weight: 500;
-  letter-spacing: 0.02em;
-  vertical-align: middle;
-  white-space: nowrap;
-  color: var(--accent);
-  background: var(--accent-soft);
-  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
-  border-radius: 999px;
 }
-/* blocos inteiros levam a etiqueta flutuando no canto, não inline */
-html[data-engenheiro="1"] [data-campo][data-campo-bloco]::after {
-  position: absolute;
-  top: -9px;
-  right: 8px;
-  margin: 0;
-  background: var(--bg);
+.marca-claro {
+  display: none;
+}
+html[data-tema="claro"] .marca-escuro {
+  display: none;
+}
+html[data-tema="claro"] .marca-claro {
+  display: inline-block;
 }
 
-/* ───────────────────── camada caos ─────────────────────
-   O granulado existe SEMPRE no DOM; quem o liga é o atributo. Desligado
-   custa zero. O efeito especial do caos (o dragão saiu — DEC-0008) entra
-   quando as referências de animação da DEC-004 forem escolhidas. */
-
-/* o dragão em chamas (DEC-0010): overlay que sobrevoa tudo menos a barra de
-   progresso (z 40). pointer-events: none — ele nunca rouba um clique. O
-   brilho de fogo mora aqui no filter, não no SVG: drop-shadow de CSS vai
-   pro compositor, filtro dentro do SVG re-rasteriza na CPU. */
-.dragao {
-  position: fixed;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 30;
-  pointer-events: none;
-  filter: drop-shadow(0 0 6px rgba(255, 122, 45, 0.55))
-    drop-shadow(0 0 22px rgba(255, 45, 85, 0.35));
-}
-/* cinto e suspensório: o componente já não monta com movimento reduzido,
-   mas a regra de CSS segura qualquer caminho que escape */
-@media (prefers-reduced-motion: reduce) {
-  .dragao {
-    display: none;
-  }
+/* o lockup do header: reflexo do k fundido ao wordmark, 22–26px de altura */
+.lockup {
+  height: 24px;
+  width: auto;
 }
 
-/* o aviso do caos contido (DEC-0011): faixa fixa acima de tudo (inclusive da
-   barra de progresso, z 40) — é a única peça que fala COM o visitante sobre
-   o estado da página, então nada pode cobri-la. Sem animação de entrada de
-   propósito: quem vê este aviso pediu menos movimento. */
-.aviso-caos {
-  position: fixed;
-  left: 50%;
-  bottom: 24px;
-  transform: translateX(-50%);
-  z-index: 50;
-  display: flex;
+/* o selo nunca encolhe além de 34px — abaixo disso o anel vira textura */
+.selo-rodape {
+  height: 38px;
+  width: auto;
+  min-height: 34px;
+}
+
+/* botão de tema: um gesto só, mono, discreto */
+.chave-tema {
+  display: inline-flex;
   align-items: center;
-  gap: 14px;
-  max-width: min(560px, calc(100vw - 32px));
-  padding: 14px 16px;
-  border: 1px solid var(--border);
-  border-left: 3px solid var(--accent);
-  border-radius: var(--r);
-  background: var(--surface);
-  color: var(--text);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
-}
-.aviso-caos p {
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.5;
-}
-.aviso-caos strong {
-  color: var(--accent);
-}
-.aviso-caos button {
-  flex-shrink: 0;
-  padding: 6px 12px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--surface-2);
-  color: var(--text);
-  font: 600 12px/1 var(--mono);
-  cursor: pointer;
-}
-.aviso-caos button:hover {
-  border-color: var(--accent);
-}
-
-.grao {
-  position: fixed;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  opacity: var(--grain-op);
-  transition: opacity var(--speed) ease;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E");
-}
-
-/* o título ganha vida sem sair do lugar — transform apenas */
-@media (prefers-reduced-motion: no-preference) {
-  @keyframes tremor {
-    0%, 100% { transform: translate(0, 0); }
-    25% { transform: translate(0.6px, -0.4px); }
-    50% { transform: translate(-0.5px, 0.5px); }
-    75% { transform: translate(0.4px, 0.35px); }
-  }
-  html[data-persona="caos"] .titulo-vivo {
-    animation: tremor 0.16s steps(2, end) infinite;
-  }
-}
-html[data-persona="caos"] .titulo-vivo em {
-  text-shadow: 1.5px 0 rgba(0, 229, 255, 0.5), -1.5px 0 rgba(255, 45, 85, 0.5), var(--glow);
-}
-
-
-/* ───────────────────── chaves do cabeçalho ───────────────────── */
-
-.chave {
-  display: flex;
-  gap: 3px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  padding: 3px;
-}
-.chave button {
+  gap: 7px;
   font: 600 11px/1 var(--mono);
   color: var(--muted);
-  background: none;
-  border: 0;
-  padding: 7px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 999px;
+  padding: 8px 13px;
   cursor: pointer;
-  transition: background var(--speed) ease, color var(--speed) ease, box-shadow var(--speed) ease;
+  transition: color var(--speed) ease, border-color var(--speed) ease;
 }
-.chave button[aria-pressed="true"] {
-  background: var(--accent);
-  color: #fff;
-  box-shadow: var(--glow);
+.chave-tema:hover {
+  color: var(--text);
+  border-color: var(--accent);
 }
 
 /* ───────────────────── tela inicial ───────────────────── */

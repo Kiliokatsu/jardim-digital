@@ -65,11 +65,6 @@ export function CartaoPost({
           ))}
         </div>
       )}
-
-      {/* só visível com o Modo Engenheiro ligado: o cartão documenta a própria linha */}
-      <div className="so-engenheiro border-t border-linha pt-2 font-mono text-[10px] leading-relaxed text-suave">
-        slug <span className="text-acento">{post.slug}</span> · idioma {post.idioma} · atualizado {post.atualizado_em?.slice(0, 10)}
-      </div>
     </article>
   );
 }

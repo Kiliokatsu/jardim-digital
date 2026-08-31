@@ -56,7 +56,7 @@ export default async function Home() {
     <>
       <section className="hero">
         <p className="sobre">Construindo em público · desde 2026</p>
-        <h1 className="titulo-vivo">
+        <h1>
           Construo sistemas sólidos.
           <br />E mostro a <em>cozinha pegando fogo</em>.
         </h1>
