@@ -1,11 +1,16 @@
 import Link from "next/link";
 import { CartaoPost } from "@/componentes/CartaoPost";
-import { listarPosts, telemetria } from "@/lib/consultas";
+import { listarPosts, listarProjetos, telemetria } from "@/lib/consultas";
+import { contarDecisoes } from "@/lib/metricas";
 
-/* Home aprovada (DEC-007): uma frase que diz quem ele é e o que o site é, os
-   três portais como estrutura da página, e os registros recentes no fim.
-   Nenhuma menção a empresa — a DEC-025 vale inclusive aqui; empregador é
-   assunto do currículo. */
+/* Home da v2 (espec §6.1): o selo como âncora do hero, a frase que diz quem
+   ele é, a FAIXA DE PROVA com três números reais (nunca chumbados — vêm do
+   banco e do próprio repositório), os três portais como estrutura, os
+   sistemas em destaque e os registros recentes. Nenhuma menção a empresa —
+   a DEC-025 vale inclusive aqui; empregador é assunto do currículo.
+
+   O calendário do GitHub (espec §6.1.7) espera decisão sobre o token da API
+   — registrado como pendência da Fase A. */
 
 const PORTAIS = [
   {
@@ -48,17 +53,34 @@ const PORTAIS = [
 ] as const;
 
 export default async function Home() {
-  const [posts, tele] = await Promise.all([listarPosts(), telemetria()]);
+  const [posts, tele, projetos, decisoes] = await Promise.all([
+    listarPosts(),
+    telemetria(),
+    listarProjetos(true),
+    contarDecisoes(),
+  ]);
   const [destaque, ...resto] = posts;
   const dupla = resto.slice(0, 2);
+
+  /* a faixa de prova: números que o visitante pode conferir — post é contável
+     nas listagens, projeto na página Profissional, decisão no repositório */
+  const PROVAS = [
+    { numero: tele.posts, rotulo: "registros publicados" },
+    { numero: projetos.length, rotulo: "sistemas em destaque" },
+    { numero: decisoes, rotulo: "decisões documentadas" },
+  ];
 
   return (
     <>
       <section className="hero">
+        {/* eslint-disable-next-line @next/next/no-img-element -- SVG da marca */}
+        <img src="/marca/selo/selo-escuro.svg" alt="" aria-hidden className="selo-hero marca-escuro" />
+        {/* eslint-disable-next-line @next/next/no-img-element -- par claro do selo */}
+        <img src="/marca/selo/selo-claro.svg" alt="" aria-hidden className="selo-hero marca-claro" />
         <p className="sobre">Construindo em público · desde 2026</p>
         <h1>
-          Construo sistemas sólidos.
-          <br />E mostro a <em>cozinha pegando fogo</em>.
+          Construo sistemas <em>sólidos</em>.
+          <br />E mostro a cozinha pegando fogo.
         </h1>
         <p className="sub">
           Desenvolvedor de sistemas, cursando Engenharia de Controle e Automação. Aqui eu
@@ -66,13 +88,22 @@ export default async function Home() {
           ganhei e o que eu perdi em cada troca.
         </p>
         <div className="acoes">
-          <Link className="btn primario" href="/profissional">
-            Quem eu sou e o que eu construí
-          </Link>
-          <Link className="btn" href="/tecnologia">
+          <Link className="btn primario" href="/tecnologia">
             Ler os registros
           </Link>
+          <Link className="btn" href="/profissional">
+            Quem eu sou
+          </Link>
         </div>
+      </section>
+
+      <section className="faixa-prova" aria-label="Números do site">
+        {PROVAS.map((p) => (
+          <div key={p.rotulo} className="prova">
+            <span className="prova-numero">{p.numero}</span>
+            <span className="prova-rotulo">{p.rotulo}</span>
+          </div>
+        ))}
       </section>
 
       <section className="pb-6">
@@ -99,6 +130,57 @@ export default async function Home() {
           })}
         </div>
       </section>
+
+      {projetos.length > 0 && (
+        <section className="pb-6">
+          <div className="cabeca-sec">
+            <h2>Sistemas em destaque</h2>
+            <div className="regua" aria-hidden />
+            <Link className="ver-tudo" href="/profissional">
+              todos os sistemas →
+            </Link>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {projetos.map((pj) => (
+              <article
+                key={pj.id}
+                className="relative flex flex-col gap-3 rounded-[var(--radius-token)] border border-linha bg-superficie p-6 transition-colors hover:border-acento/50"
+              >
+                <h3 className="text-lg font-bold leading-snug tracking-tight">
+                  {pj.link_url ? (
+                    <a
+                      href={pj.link_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="transition-colors hover:text-acento"
+                    >
+                      <span className="absolute inset-0" aria-hidden />
+                      {pj.nome}
+                    </a>
+                  ) : (
+                    pj.nome
+                  )}
+                </h3>
+                {pj.descricao && (
+                  <p className="text-[0.94rem] leading-relaxed text-suave">{pj.descricao}</p>
+                )}
+                {pj.stack.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {pj.stack.map((s) => (
+                      <span
+                        key={s}
+                        className="rounded-md bg-tag-fundo px-2 py-1 font-mono text-[10px] text-tag-texto"
+                      >
+                        {s}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="pb-10">
         <div className="cabeca-sec">

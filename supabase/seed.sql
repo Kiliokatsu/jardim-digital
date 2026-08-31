@@ -290,3 +290,18 @@ on conflict do nothing;
 --
 -- Seed que alista admin sozinho é seed que alista admin em todo ambiente
 -- em que rodar — inclusive num fork de outra pessoa.
+
+
+-- ─────────────────────────── projetos (DEC-0022) ───────────────────────────
+-- O primeiro sistema entregue é o próprio site: estudo de caso de si mesmo.
+-- Id fixo pra idempotência — rodar o seed duas vezes não duplica.
+insert into projetos (id, nome, descricao, link_url, stack, destaque, visivel, ordem)
+values (
+  'a0000000-0000-4000-8000-000000000001',
+  'Jardim Digital',
+  'Este site: Next.js + Supabase com RLS como fronteira real, reconstruído em público com cada decisão documentada.',
+  'https://github.com/Kiliokatsu/jardim-digital',
+  '{Next.js,Supabase,TypeScript}',
+  true, true, 1
+)
+on conflict (id) do nothing;

@@ -251,8 +251,60 @@ html[data-tema="claro"] .marca-claro {
 
 /* ───────────────────── tela inicial ───────────────────── */
 
+/* O hero da v2 é centrado no selo (espec §6.1 e §11.1): a peça cerimonial
+   como âncora, a overline virando legenda logo abaixo, e o resto em coluna. */
 .hero {
-  padding: 92px 28px 62px;
+  padding: 72px 28px 56px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.selo-hero {
+  height: 120px;
+  width: auto;
+  margin-bottom: 22px;
+}
+@media (min-width: 1024px) {
+  .selo-hero {
+    height: 160px;
+  }
+}
+
+/* a faixa de prova: número em Fraunces no acento, rótulo em mono */
+.faixa-prova {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  padding: 26px 0;
+  margin-bottom: 26px;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.prova {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.prova-numero {
+  font-family: var(--display);
+  font-size: 2rem;
+  font-weight: 650;
+  line-height: 1;
+  color: var(--accent);
+}
+.prova-rotulo {
+  font: 500 10px/1.4 var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--pedra);
+  text-align: center;
+}
+@media (max-width: 480px) {
+  .prova-numero {
+    font-size: 1.5rem;
+  }
 }
 .sobre {
   font: 600 11px/1 var(--mono);

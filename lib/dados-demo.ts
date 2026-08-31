@@ -1,6 +1,6 @@
 import type {
   Certificado, Etiqueta, Experiencia, Formacao, Habilidade,
-  Perfil, PerfilLink, Post,
+  Perfil, PerfilLink, Post, Projeto,
 } from "@/lib/tipos";
 
 /* Espelho do supabase/seed.sql em memória, pra que `npm run dev` mostre o site
@@ -254,3 +254,34 @@ export const habilidadesDemo: Habilidade[] = [
    foi conferido um a um — e, com balde público, conferido ANTES do upload.
    Nenhum foi conferido ainda, então o espelho público é uma lista vazia. */
 export const certificadosDemo: Certificado[] = [];
+
+/* Sistemas entregues (DEC-0022). O primeiro é o único que não é exemplo:
+   este site existe de verdade e é o estudo de caso de si mesmo. */
+export const projetosDemo: Projeto[] = [
+  {
+    id: "pj1",
+    nome: "Jardim Digital",
+    descricao:
+      "Este site: Next.js + Supabase com RLS como fronteira real, reconstruído em público com cada decisão documentada.",
+    imagem_url: null,
+    link_url: "https://github.com/Kiliokatsu/jardim-digital",
+    stack: ["Next.js", "Supabase", "TypeScript"],
+    destaque: true,
+    visivel: true,
+    ordem: 1,
+    criado_em: "2026-08-01T12:00:00Z",
+  },
+  {
+    id: "pj2",
+    nome: "Gerador de documentos",
+    descricao:
+      "Automação que monta documento técnico a partir de dados estruturados — o clique substituiu uma tarde de copiar-e-colar.",
+    imagem_url: null,
+    link_url: null,
+    stack: ["n8n", "PostgreSQL"],
+    destaque: true,
+    visivel: true,
+    ordem: 2,
+    criado_em: "2026-08-01T12:00:00Z",
+  },
+];

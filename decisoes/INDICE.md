@@ -23,6 +23,7 @@
 | [0019](0019-dados-artemec-em-projeto-separado.md) | Dados da Artemec nunca moram no projeto Supabase do jardim | 2026-08-18 | proposta | claude |
 | [0020](0020-project-ref-e-informacao-semi-publica.md) | O project ref do Supabase é informação semi-pública — aceitar e registrar | 2026-08-18 | proposta | claude |
 | [0021](0021-adocao-da-reconstrucao-v2.md) | Reconstrução v2 em duas fases: o visual agora, o motor depois de debatido | 2026-08-31 | aceita | humano |
+| [0022](0022-tabela-projetos-e-nao-canais.md) | Nasce a tabela projetos; canais_contato não nasce — perfil_links já é isso | 2026-08-31 | aceita | claude |
 
 ---
 
