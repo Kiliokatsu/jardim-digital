@@ -224,6 +224,8 @@ export function ConsolePainel() {
   return (
     <main className="mx-auto w-full max-w-[var(--maxw)] px-6 py-10">
       <header className="mb-8 flex items-center gap-4 border-b border-linha pb-4">
+        {/* eslint-disable-next-line @next/next/no-img-element -- SVG da marca */}
+        <img src="/marca/avatar/avatar.svg" alt="" aria-hidden className="h-7 w-7" />
         <h1 className="font-mono text-lg font-bold">
           painel<span className="text-acento">.</span>
         </h1>
@@ -252,13 +254,22 @@ export function ConsolePainel() {
 
       {estado === "carregando" && <p className="text-sm text-suave">conferindo a sessão…</p>}
 
+      {/* a tela de entrada da espec v2 (§7.1): centrada, cerimoniosa. O
+          MÉTODO de login (GitHub OAuth) fica até a Fase B decidir a troca
+          por e-mail/senha — aqui só mudou a pele. */}
       {estado === "deslogado" && (
-        <section className="max-w-[60ch]">
-          <p className="mb-4 text-sm text-suave">
-            Área restrita. Não há cadastro: autenticar é aberto, autorizar é uma
-            lista de uma linha — e a lista mora no banco.
+        <section className="mx-auto flex max-w-md flex-col items-center py-16 text-center">
+          <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-pedra">
+            área restrita
           </p>
-          <button type="button" className="btn primario" onClick={entrar}>
+          <h2 className="mt-3 text-3xl font-bold tracking-tight">
+            A cozinha, por dentro.
+          </h2>
+          <p className="mt-4 text-sm leading-relaxed text-suave">
+            Não há cadastro: autenticar é aberto, autorizar é uma lista de uma
+            linha — e a lista mora no banco.
+          </p>
+          <button type="button" className="btn primario mt-7" onClick={entrar}>
             Entrar com GitHub
           </button>
         </section>

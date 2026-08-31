@@ -98,12 +98,39 @@ html[data-tema="claro"] {
   --erro: #cf222e;
 }
 
-/* O painel é console de supervisão: mais denso, raio mais apertado.
-   É classe num elemento, não atributo no <html>: a troca de visão não
-   custa JavaScript — a variável simplesmente cascateia pra dentro. */
+/* O painel é console de supervisão: mais denso, raio mais apertado — e
+   DARK-ONLY (espec v2 §7). Mesmo com o site público no claro, o console
+   fica no escuro: os tokens escuros são re-declarados aqui e cascateiam
+   por cima do tema escolhido, sem JavaScript — é a mesma mecânica de
+   variáveis do resto, só que ancorada na classe em vez do atributo. */
 .painel-raiz {
   --r: 8px;
   --maxw: 1400px;
+
+  --bg: #09090b;
+  --bg2: #09090b;
+  --surface: #140a0e;
+  --surface-2: #0d0d10;
+  --text: #f4f4f5;
+  --muted: #a1a1aa;
+  --pedra: #71717a;
+  --accent: #ff2e4c;
+  --accent-hover: #c1223a;
+  --accent-soft: rgba(255, 46, 76, 0.13);
+  --vinho: #8b0f23;
+  --border: #26262b;
+  --tag-fundo: #2a1208;
+  --tag-texto: #fdba74;
+  --codigo-fundo: #0d0d10;
+  --ok: #4ade80;
+  --ok-fundo: #0c1410;
+  --ok-borda: #1d3a2a;
+  --warn: #f97316;
+  --erro: #ff2e4c;
+  --gelo: var(--tag-texto);
+
+  background: var(--bg);
+  color: var(--text);
 }
 
 /* Expõe os tokens como utilitários Tailwind: bg-fundo, text-suave,

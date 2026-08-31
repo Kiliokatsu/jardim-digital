@@ -131,9 +131,9 @@ Não são erros; são pontas soltas que precisam de decisão do dono.
   demonstração (`npm run testar-site`). A frase de defesa: "testo o que o visitante
   recebe, com o banco desligado de propósito — o teste falha quando eu quebro o site,
   nunca porque o conteúdo mudou". Falta ainda: rodar em CI antes do merge.
-- **Painel de administração fora desta branch** — decisão do pacote dragão (DEC-012,
-  fase 2). Publicar é pelo Studio do Supabase até lá. O painel construído antes vive na
-  `main`.
+- **Reconstrução v2 em andamento na `develop`** (DEC-0021) — Fase A (visual) com as
+  telas públicas e o painel já revestidos; Fase B (motor: ideias/n8n/pg_cron, login
+  e-mail/senha) aguarda debate. O painel vive aqui e opera sob RLS + `is_admin()`.
 
 Atualize esta seção quando qualquer um desses itens for resolvido.
 
