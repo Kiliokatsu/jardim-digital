@@ -216,15 +216,16 @@ html[data-tema="claro"] .marca-claro {
   display: inline-block;
 }
 
-/* o lockup do header: reflexo do k fundido ao wordmark, 22–26px de altura */
+/* o lockup do header: reflexo do k fundido ao wordmark. A espec dizia
+   22–26px; o dono viu no ar e mandou crescer — é a cara do site. */
 .lockup {
-  height: 24px;
+  height: 32px;
   width: auto;
 }
 
 /* o selo nunca encolhe além de 34px — abaixo disso o anel vira textura */
 .selo-rodape {
-  height: 38px;
+  height: 44px;
   width: auto;
   min-height: 34px;
 }
@@ -560,35 +561,16 @@ a.etiq:hover {
   margin-bottom: 28px;
 }
 
-.autor {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  padding-top: 22px;
-  border-top: 1px solid var(--border);
-}
-.avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: var(--surface-2);
-  display: grid;
-  place-items: center;
-  font: 650 13px/1 var(--sans);
-  color: var(--muted);
-  flex: none;
-}
-.autor-nome {
-  font-size: 0.9rem;
-  font-weight: 600;
-}
-.autor-sub {
-  font-size: 0.8rem;
-  color: var(--muted);
-}
-
 /* corpo do texto. .prosa é a mesma coisa com o nome antigo: o Markdown
-   renderiza com ela, e trocar o nome lá fora não é trabalho desta camada. */
+   renderiza com ela, e trocar o nome lá fora não é trabalho desta camada.
+
+   A voz da leitura é Fraunces (espec §4): o corpo do post fala na mesma
+   fonte dos títulos — texto de INTERFACE continua em Inter; os elementos
+   mono (código, etiqueta) declaram a própria fonte e não herdam esta. */
+.texto,
+.prosa {
+  font-family: var(--display);
+}
 .texto > * + *,
 .prosa > * + * {
   margin-top: 22px;
@@ -597,8 +579,16 @@ a.etiq:hover {
    botão e etiqueta; para ler seis minutos, ~17px cansa menos. */
 .texto p,
 .prosa p {
-  font-size: 1.045rem;
-  line-height: 1.78;
+  font-size: 1.0625rem;
+  line-height: 1.75;
+}
+@media (max-width: 640px) {
+  .texto p,
+  .prosa p,
+  .texto li,
+  .prosa li {
+    font-size: 1rem;
+  }
 }
 /* Espaço maior ANTES do título que depois: é isso que agrupa o título
    com o parágrafo dele em vez de deixá-lo solto no meio. */
@@ -764,6 +754,91 @@ a.etiq:hover {
   border-top: 1px dashed var(--border);
   font: 500 11px/1.6 var(--mono);
   color: var(--muted);
+}
+
+/* ───────────────── o fim do registro (espec §11.3) ─────────────────
+   A assinatura itálica e o carimbo do selo, como papel de carta. O
+   carimbo leva o rotate(-8deg) e a opacidade de tinta que o pacote da
+   marca prescreve — via CSS, nunca assado no SVG. */
+.fim-registro {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-top: 44px;
+}
+.assinatura-fim {
+  height: 34px;
+  width: auto;
+}
+.carimbo {
+  height: 92px;
+  width: auto;
+  transform: rotate(-8deg);
+  opacity: 0.92;
+}
+.assinado {
+  margin-top: 10px;
+  font: 500 12px/1.6 var(--mono);
+  color: var(--pedra);
+}
+.assinado a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+/* ───────────────── quadro Ganhei/Perdi (espec §5) ─────────────────
+   A assinatura do blog: duas colunas, empilham no estreito. O verde é
+   semântico e SÓ existe aqui e no status do executor — regra da espec. */
+.ganhei-perdi {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin: 30px 0;
+  font-family: var(--sans); /* quadro é interface, não leitura corrida */
+}
+.gp-coluna {
+  border-radius: var(--r);
+  padding: 18px 20px;
+  border: 1px solid var(--border);
+}
+.gp-ganhei {
+  background: var(--ok-fundo);
+  border-color: var(--ok-borda);
+}
+.gp-perdi {
+  background: var(--accent-soft);
+  border-color: color-mix(in srgb, var(--vinho) 55%, transparent);
+}
+.gp-titulo {
+  font: 600 10px/1 var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 0.13em;
+  margin-bottom: 12px;
+}
+.gp-ganhei .gp-titulo {
+  color: var(--ok);
+}
+.gp-perdi .gp-titulo {
+  color: var(--accent);
+}
+.gp-coluna ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.gp-coluna li {
+  font-size: 0.92rem;
+  line-height: 1.55;
+  margin: 0;
+}
+@media (max-width: 360px) {
+  .ganhei-perdi {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* anterior / próximo */

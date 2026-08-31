@@ -30,6 +30,14 @@ test.describe("página de leitura", () => {
     await expect(
       page.getByText("Os links de ferramentas neste post são de indicação."),
     ).toBeVisible();
+
+    // v2: a cerca ```ganhei-perdi virou o quadro-assinatura do blog
+    const quadro = page.getByRole("group", { name: "O que eu ganhei e o que eu perdi" });
+    await expect(quadro.getByText("Fila no provedor", { exact: false })).toBeVisible();
+    await expect(quadro.getByText("A documentação do Brevo é pior", { exact: false })).toBeVisible();
+
+    // v2: o autor assina no FIM do registro, não no topo
+    await expect(page.getByText(/Escrito por Vinícius/)).toBeVisible();
   });
 
   test("vizinho anterior navega para o post publicado antes", async ({ page }) => {

@@ -8,11 +8,12 @@ import { IndiceLateral } from "@/componentes/post/IndiceLateral";
 import { buscarPost, listarPosts, vizinhosDoPost } from "@/lib/consultas";
 import { dataLonga, minutosDeLeitura } from "@/lib/formato";
 
-/* A página de leitura — o template aprovado no pacote dragão, por inteiro:
-   barra de progresso, trilha, cabeçalho com autor, coluna de 68ch, janelinha
-   de código, fecho-pergunta (o último parágrafo do texto, sem caixa e sem
-   CTA — DEC-027), etiquetas, aviso de indicação escrito pelo componente
-   (DEC-013), vizinhos e índice lateral.
+/* A página de leitura na v2 (espec §6.4): barra de progresso, trilha, tags +
+   título + meta (com "atualizado em" quando a edição é de verdade), corpo em
+   Fraunces na coluna de 68ch, janelinha de código, quadro Ganhei/Perdi,
+   fecho-pergunta (DEC-027), etiquetas, aviso de indicação (DEC-013),
+   ASSINATURA E CARIMBO no fim — o autor saiu do topo de propósito: quem abre
+   um registro veio ler o argumento, não o crachá — vizinhos e índice lateral.
 
    ISR de 5 minutos: publicar é operação de banco (pelo Studio, até o painel
    existir), então a página se atualiza sozinha sem rebuild manual. */
@@ -57,6 +58,14 @@ export default async function PaginaRegistro(props: PageProps<"/registro/[slug]"
   const secoes = secoesDoMarkdown(post.corpo);
   const minutos = minutosDeLeitura(post.corpo);
 
+  /* "atualizado em" só quando a edição foi de verdade: mais de 24h depois de
+     publicar (espec §6.4). Corrigir um typo no dia não é atualização. */
+  const UM_DIA_MS = 24 * 60 * 60 * 1000;
+  const foiAtualizado =
+    post.publicado_em !== null &&
+    new Date(post.atualizado_em).getTime() >
+      new Date(post.publicado_em).getTime() + UM_DIA_MS;
+
   return (
     <>
       {/* key por post: navegar anterior/próximo reconcilia esta página no mesmo
@@ -75,19 +84,12 @@ export default async function PaginaRegistro(props: PageProps<"/registro/[slug]"
               <span className="portal">{post.portal}</span>
               <span>{dataLonga(post.publicado_em)}</span>
               <span>{minutos} min de leitura</span>
+              {foiAtualizado && <span>atualizado em {dataLonga(post.atualizado_em)}</span>}
             </div>
 
             <h1>{post.titulo}</h1>
 
             <p className="chamada">{post.resumo}</p>
-
-            <div className="autor">
-              <div className="avatar" aria-hidden>VH</div>
-              <div>
-                <p className="autor-nome">Vinícius Henrique</p>
-                <p className="autor-sub">Desenvolvedor de sistemas · Goiânia, GO</p>
-              </div>
-            </div>
           </header>
 
           <div className="texto">
@@ -107,6 +109,22 @@ export default async function PaginaRegistro(props: PageProps<"/registro/[slug]"
           {post.tem_indicacao && (
             <p className="indicacao">Os links de ferramentas neste post são de indicação.</p>
           )}
+
+          {/* O fim do registro (espec §11.3): a assinatura itálica e o carimbo
+              do selo, como papel de carta — é aqui que o autor aparece. O
+              "registro nº NNN" espera a Fase B (não há sequência no banco). */}
+          <div className="fim-registro">
+            {/* eslint-disable-next-line @next/next/no-img-element -- SVG da marca */}
+            <img src="/marca/assinatura/assinatura-escuro.svg" alt="kiliokatsu, assinado" className="assinatura-fim marca-escuro" />
+            {/* eslint-disable-next-line @next/next/no-img-element -- par claro */}
+            <img src="/marca/assinatura/assinatura-claro.svg" alt="" aria-hidden className="assinatura-fim marca-claro" />
+            {/* eslint-disable-next-line @next/next/no-img-element -- SVG da marca */}
+            <img src="/marca/selo/selo-carimbo.svg" alt="" aria-hidden className="carimbo" />
+          </div>
+          <p className="assinado">
+            Escrito por Vinícius · desenvolvedor de sistemas ·{" "}
+            <Link href="/profissional">ver perfil →</Link>
+          </p>
 
           {(anterior || proximo) && (
             <nav className="vizinhos" aria-label="Registros vizinhos">

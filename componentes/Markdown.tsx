@@ -1,6 +1,7 @@
 import { Children, isValidElement } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { GanheiPerdi } from "@/componentes/post/GanheiPerdi";
 import { Janelinha } from "@/componentes/post/Janelinha";
 import { paraSlug } from "@/lib/formato";
 
@@ -68,6 +69,9 @@ function criaComponentes(): Components {
       const props = filho.props as { className?: string; children?: React.ReactNode };
       const linguagem = /language-(\S+)/.exec(props.className ?? "")?.[1] ?? "text";
       const codigo = textoDe(props.children);
+
+      /* a cerca ```ganhei-perdi não é código: é o quadro-assinatura do blog */
+      if (linguagem === "ganhei-perdi") return <GanheiPerdi texto={codigo} />;
 
       // meta da cerca (ex.: "titulo=lib/email.ts") vem no nó hast, não nas props
       const noCode = node?.children?.[0];
