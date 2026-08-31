@@ -230,6 +230,21 @@ html[data-tema="claro"] .marca-claro {
   min-height: 34px;
 }
 
+/* o timbre da página Profissional (espec §11.2): selo médio no canto */
+.selo-timbre {
+  position: absolute;
+  top: 40px;
+  right: 0;
+  height: 62px;
+  width: auto;
+}
+@media (max-width: 640px) {
+  .selo-timbre {
+    height: 44px;
+    top: 24px;
+  }
+}
+
 /* botão de tema: um gesto só, mono, discreto */
 .chave-tema {
   display: inline-flex;
