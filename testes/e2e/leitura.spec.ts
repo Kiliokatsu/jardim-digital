@@ -38,6 +38,12 @@ test.describe("página de leitura", () => {
 
     // v2: o autor assina no FIM do registro, não no topo
     await expect(page.getByText(/Escrito por Vinícius/)).toBeVisible();
+
+    // v2: a OG image dinâmica está pendurada na página (arquivo-convenção)
+    await expect(page.locator('meta[property="og:image"]')).toHaveAttribute(
+      "content",
+      /opengraph-image/,
+    );
   });
 
   test("vizinho anterior navega para o post publicado antes", async ({ page }) => {
