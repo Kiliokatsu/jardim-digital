@@ -18,6 +18,12 @@
 | [0014](0014-ciclo-de-vida-do-post-no-painel.md) | O ciclo de vida do post inteiro no painel: editar, publicar, agendar e despublicar são UPDATEs sob RLS | 2026-08-13 | aceita | claude |
 | [0015](0015-automacao-painel-controla-n8n-executa.md) | Automação: o painel controla, o n8n executa, e segredo não mora em tabela | 2026-08-13 | proposta | claude |
 | [0016](0016-tabelas-da-automacao.md) | As tabelas da automação: pautas, divulgacoes e a coluna formato | 2026-08-15 | aceita | claude |
+| [0017](0017-storage-sem-enumeracao.md) | Fechar a enumeração do balde de certificados no Storage | 2026-08-18 | aceita | agente:database-reviewer |
+| [0018](0018-endurecimento-do-painel-sem-biblioteca-nova.md) | Endurecer a fronteira do painel com código próprio, sem biblioteca nova | 2026-08-18 | aceita | claude |
+| [0019](0019-dados-artemec-em-projeto-separado.md) | Dados da Artemec nunca moram no projeto Supabase do jardim | 2026-08-18 | proposta | claude |
+| [0020](0020-project-ref-e-informacao-semi-publica.md) | O project ref do Supabase é informação semi-pública — aceitar e registrar | 2026-08-18 | proposta | claude |
+| [0021](0021-adocao-da-reconstrucao-v2.md) | Reconstrução v2 em duas fases: o visual agora, o motor depois de debatido | 2026-08-31 | aceita | humano |
+| [0022](0022-tabela-projetos-e-nao-canais.md) | Nasce a tabela projetos; canais_contato não nasce — perfil_links já é isso | 2026-08-31 | aceita | claude |
 
 ---
 

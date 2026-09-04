@@ -1,9 +1,10 @@
 import Link from "next/link";
-import { ChaveEngenheiro, ChavePersona, ChaveTema } from "@/componentes/Chaves";
+import { AlternadorTema } from "@/componentes/AlternadorTema";
 
-/* Cabeçalho aprovado nas telas do pacote dragão: marca com o ponto de acento,
-   os três portais, e as chaves de modo. O nome dos portais é a estrutura do
-   site (DEC-001) — não é menu de conveniência, é o mapa. */
+/* O header da v2 (espec §5): o lockup da marca — o reflexo do k fundido ao
+   wordmark — no lugar do texto puro, a navegação dos três portais, e o
+   único interruptor que sobrou: claro/escuro. O par de SVGs vai inteiro
+   pro DOM e o data-tema do <html> decide qual pinta (classe .marca-*). */
 
 const PORTAIS = [
   { href: "/profissional", rotulo: "Profissional" },
@@ -13,11 +14,14 @@ const PORTAIS = [
 
 export function CabecalhoPublico() {
   return (
-    <header className="topo">
+    <header className="border-b border-linha">
       <div className="mx-auto flex w-full max-w-[var(--maxw)] items-center gap-6 px-6 py-4">
-        <Link href="/" className="marca">
-          <span className="ponto" aria-hidden />
-          Kiliokatsu
+        <Link href="/" className="flex items-center" aria-label="Kiliokatsu — página inicial">
+          {/* dimensões fixadas pela classe .lockup (altura 24px, espec §11) */}
+          {/* eslint-disable-next-line @next/next/no-img-element -- SVG da marca: next/image não otimiza vetor */}
+          <img src="/marca/header/header-escuro.svg" alt="kiliokatsu" className="lockup marca-escuro" />
+          {/* eslint-disable-next-line @next/next/no-img-element -- par claro do mesmo lockup */}
+          <img src="/marca/header/header-claro.svg" alt="" aria-hidden className="lockup marca-claro" />
         </Link>
 
         <nav className="hidden items-center gap-1 md:flex" aria-label="Portais (menu principal)">
@@ -34,13 +38,7 @@ export function CabecalhoPublico() {
 
         <div className="flex-1" />
 
-        <div className="flex items-center gap-2.5">
-          <ChaveTema />
-          <span className="hidden sm:contents">
-            <ChavePersona />
-            <ChaveEngenheiro />
-          </span>
-        </div>
+        <AlternadorTema />
       </div>
 
       {/* navegação de portal no celular, onde a linha de cima não cabe */}

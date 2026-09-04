@@ -1,11 +1,11 @@
 import { supabasePublico } from "@/lib/supabase/publico";
 import {
   certificadosDemo, etiquetasDemo, experienciasDemo, formacaoDemo,
-  habilidadesDemo, perfilDemo, perfilLinksDemo, postsDemo,
+  habilidadesDemo, perfilDemo, perfilLinksDemo, postsDemo, projetosDemo,
 } from "@/lib/dados-demo";
 import type {
   Certificado, Etiqueta, Experiencia, Formacao, Habilidade,
-  Perfil, PerfilLink, Portal, Post, Telemetria,
+  Perfil, PerfilLink, Portal, Post, Projeto, Telemetria,
 } from "@/lib/tipos";
 
 /* Leitura do jardim. Cada função tem o mesmo contrato: tenta o banco e, se ele
@@ -64,6 +64,31 @@ export async function buscarPost(slug: string): Promise<Post | null> {
     return publicadosDemo().find((p) => p.slug === slug) ?? null;
   }
   return (data as unknown as Post | null) ?? null;
+}
+
+/* ─────────────────────────── projetos ───────────────────────────
+   DEC-0022: os "sistemas entregues". A home pede só os com destaque;
+   a Profissional pede todos os visíveis. A RLS já filtra `visivel`
+   pro anônimo — o filtro não se repete aqui. */
+
+export async function listarProjetos(somenteDestaque = false): Promise<Projeto[]> {
+  const demo = () =>
+    [...projetosDemo]
+      .filter((p) => p.visivel && (!somenteDestaque || p.destaque))
+      .sort((a, b) => a.ordem - b.ordem);
+
+  const sb = supabasePublico();
+  if (!sb) return demo();
+
+  let consulta = sb.from("projetos").select("*").order("ordem");
+  if (somenteDestaque) consulta = consulta.eq("destaque", true);
+
+  const { data, error } = await consulta;
+  if (error || !data) {
+    if (error) console.error("listarProjetos falhou:", error.message);
+    return demo();
+  }
+  return data as Projeto[];
 }
 
 /* ─────────────────────────── etiquetas ─────────────────────────── */

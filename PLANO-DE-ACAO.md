@@ -1,139 +1,125 @@
-# Plano de ação — retomada do projeto
+# Plano de ação — estado do projeto e retomada
 
-> Escrito em 2026-08-11, no fim do dia em que a branch `reconstrucao-kiliokatsu`
-> ficou pronta e o Supabase foi alimentado. Leia de cima pra baixo: a primeira
-> parte explica COMO o banco funciona (pra você estudar), a segunda é o
-> checklist do que falta, em ordem.
+> Reescrito em **2026-09-01**, no fechamento da primeira etapa do site
+> profissional: a **Fase A da reconstrução v2** (DEC-0021) está construída e
+> publicada na branch `develop`. Leia de cima pra baixo: a primeira parte diz
+> onde estamos, a segunda é o checklist do que falta, em ordem.
 
 ---
 
-## Parte 1 — Como o banco funciona (o mapa das tabelas)
+## Parte 1 — Onde estamos
 
-O projeto Supabase é o `eqwlurwnxkekrfahwrmw`. Abra **Table Editor** no painel
-e siga com este mapa do lado:
+### A branch de trabalho é a `develop`
 
-### As tabelas de conteúdo
+Ela nasceu do merge de `main` + `fase-2-hardening-pos-publicacao` e carrega
+tudo. As branches antigas (`inicio_fase_2`, `reconstrucao-kiliokatsu`,
+`fase-2-hardening-pos-publicacao`) já foram absorvidas e podem ser apagadas
+numa limpeza. A `main` ainda serve o site antigo — o merge `develop → main`
+acontece quando o dono aprovar o visual novo.
 
-| Tabela | O que guarda | O detalhe que importa |
-|---|---|---|
-| `posts` | Cada registro do blog: título, resumo, `corpo` (markdown), portal, datas | **`publicado_em` é o interruptor**: NULL = rascunho (invisível pro público), preenchido com data passada = no ar. Data futura = agendado (só aparece quando a hora chegar) |
-| `etiquetas` | Cada tag: `slug` (vai na URL, sem acento), `nome` (vai na tela), `descricao` (abre a página /tag/...) | **Antes de criar uma nova, olhe as que existem** — "postgres" e "PostgreSQL" como slugs diferentes viram duas páginas. Renomear uma etiqueta = UPDATE numa linha, e muda em todos os posts de uma vez |
-| `posts_etiquetas` | A ligação post↔etiqueta (só dois ids) | É aqui que um post "ganha" uma tag: uma linha por par. A chave composta impede a mesma tag duas vezes no mesmo post |
+### O que a Fase A entregou (commits na `develop`, todos verdes)
 
-### As tabelas do currículo (página Profissional)
-
-| Tabela | O que guarda |
+| Leva | O que é |
 |---|---|
-| `perfil` | Uma linha só (id=1): nome, título, resumo/bio, cidade, e-mail de contato, foto |
-| `perfil_links` | Os botões do rodapé: rótulo + URL + ordem ← **é aqui que entram seus links reais** |
-| `experiencias` | Cada emprego: cargo, empresa, período, resumo, marcos |
-| `formacao` | Cada curso: nome, instituição, situação, datas |
-| `habilidades` | Cada conhecimento: categoria, nome, nível (1–5) e `prova_post_id` — o post que comprova. Habilidade sem prova aparece "sem prova escrita ainda" no site, de propósito |
-| `certificados` | Curso, instituição, ano, arquivo. `publico = false` por padrão = não aparece. Só vire pra true depois de conferir o PDF (CPF!) |
+| Endurecimento pós-publicação | Migration 0004 (Storage sem enumeração), correções do painel, DEC-0017/0018 |
+| Alicerces da v2 | Marca completa (selo/lockup/favicon/carimbo/assinatura em `public/marca/`), tokens rubro/vinho, Fraunces + Inter + IBM Plex Mono, rodapé de 2 andares. **Morreram**: Modo Caos, dragão, Modo Engenheiro, chaves — sobrou o alternador claro/escuro |
+| Registro | Corpo em Fraunces, quadro **Ganhei/Perdi** (cerca ` ```ganhei-perdi ` no markdown), assinatura + carimbo no fim, "atualizado em" |
+| Listagens | Busca sem reload (ignora acento), filtro por etiqueta, card EM DESTAQUE, paginação |
+| Home | Selo no hero, faixa de prova com números reais, sistemas em destaque. **Migration 0005** cria a tabela `projetos` (DEC-0022; `canais_contato` não nasceu — `perfil_links` já é isso) |
+| Profissional | Timbre do selo, timeline com marcador ATUAL, marcos visíveis, sistemas entregues. Bug consertado: o medidor de nível estava invisível desde a v3 |
+| Painel | Dark-only (tokens re-declarados em `.painel-raiz`), tela de entrada "A cozinha, por dentro." — o login continua GitHub OAuth até a Fase B |
+| OG image | Imagem de compartilhamento gerada pelo Next por post, com degradação sem rede provada de ponta a ponta |
 
-### A segurança (por que ninguém estraga nada)
+Validação em cada commit: `npx tsc --noEmit` + `npx eslint .` +
+`npm run testar-site` (11 E2E contra build de produção) e, quando toca banco,
+`npm run testar-schema` (34 sondas no PGlite, agora cobrindo 0001+0003+0005).
 
-- **RLS (Row Level Security)** está ligada em todas as tabelas. A regra pública:
-  qualquer pessoa **lê** só o que está publicado; **ninguém de fora escreve nada**
-  (testado hoje: tentativa anônima de INSERT levou HTTP 401).
-- `admins` + `is_admin()`: a lista de quem pode escrever pelo site. Está **vazia**
-  — autenticar (login) não é autorizar (escrever); só a linha que VOCÊ inserir
-  nessa tabela dá poder de escrita. Isso é a DEC-020.
-- Enquanto o painel não existe, você escreve pelo **Studio do Supabase** (Table
-  Editor), que usa a sua conta do painel — não depende de `admins`.
+### Segurança — o que a auditoria de 5 agentes disse (2026-08-18)
 
-### Como publicar um post hoje (pelo Studio)
+Repositório público **limpo**: nenhum segredo no código nem no histórico
+(todos os branches varridos), DEC-0004 cumprida, nada sigiloso da Artemec.
+O CRITICAL encontrado (listagem anônima do balde `certificados`) virou a
+migration 0004. Achado informativo: o project ref aparece em docs — é o
+assunto da DEC-0020 (proposta).
 
-1. Table Editor → `posts` → Insert row: preencha `slug` (ex.: `meu-primeiro-post`),
-   `portal` (tecnologia/pessoal), `titulo`, `resumo`, `corpo` (markdown) e deixe
-   `publicado_em` NULL enquanto for rascunho.
-2. Para as tags: `posts_etiquetas` → Insert row com o id do post + id da etiqueta.
-3. Quando quiser publicar: edite `publicado_em` com a data/hora. Em até 5 minutos
-   o site atualiza sozinho (ISR), sem deploy.
+### As decisões desta etapa
 
-O corpo aceita: `## Título de seção` (vira o índice lateral), listas, `> citação`,
-e bloco de código assim: ` ```typescript titulo=lib/exemplo.ts ` (o `titulo=` vira
-o nome do arquivo na janelinha). `tem_indicacao = true` faz o aviso de link de
-indicação aparecer sozinho no fim.
+DEC-0017 (storage sem enumeração) · DEC-0018 (endurecimento do painel sem
+biblioteca nova) · DEC-0019 (**proposta**: dados da Artemec em projeto Supabase
+separado) · DEC-0020 (**proposta**: project ref é semi-público) · DEC-0021
+(reconstrução v2 em duas fases) · DEC-0022 (tabela `projetos`).
+
+### Como publicar um post hoje (continua igual)
+
+Studio → `posts` → Insert (slug, portal, titulo, resumo, corpo em markdown;
+`publicado_em` NULL = rascunho, data passada = no ar) → `posts_etiquetas` pra
+ligar tags. O corpo aceita `## seção` (índice lateral), ` ```lang titulo=arq `
+(janelinha) e ` ```ganhei-perdi ` com linhas `+`/`-` (o quadro). Ou pelo
+painel `/painel`, logado e alistado em `admins`.
 
 ---
 
 ## Parte 2 — Checklist de retomada (em ordem)
 
-### 0. Corrigir o conteúdo (datas, textos, Profissional)  ← URGENTE, e já dá pra fazer
+### 1. URGENTE — banco real e chaves (só o dono faz, ~15 min)
 
-**Tudo que aparece no site mora no banco, não no código** — e edita-se AGORA pelo
-Table Editor do Supabase, sem esperar o login/painel da fase 2:
-`experiencias` (datas/cargo/resumo), `perfil` (bio/título/e-mail), `formacao`,
-`habilidades`, `perfil_links`. Clicou na célula, corrigiu, Enter — o site
-atualiza sozinho em até 5 min.
+- [ ] **Aplicar as migrations 0004 e 0005 no Supabase real**: Studio → SQL
+      Editor → colar `supabase/migrations/0004_storage_sem_enumeracao.sql` e
+      depois `0005_projetos.sql`. Sem a 0004, a enumeração do balde de
+      certificados continua ABERTA em produção. Verificação no próprio editor:
+      `select policyname, roles from pg_policies where schemaname='storage';`
+- [ ] **Rotacionar as chaves** (Settings → API e Settings → Database → Reset
+      password): secret key, access token e senha do Postgres. O access token
+      atual **expira ~10/09/2026** de qualquer forma. Atualizar `.env.local`.
+- [ ] **Conferir no dashboard**: Authentication → signup **desabilitado**;
+      Settings → API → exposed schemas só `public`/`storage`. (Registrar o
+      resultado na DEC-0020 ao aceitá-la.)
 
-⚠ **Pegadinha**: o preview no Vercel ainda mostra os dados de DEMONSTRAÇÃO
-(gravados no código), porque as variáveis de ambiente não estão lá. Para ver as
-correções do banco no preview: Vercel → Settings → Environment Variables →
-adicionar as duas `NEXT_PUBLIC_*` marcando SÓ o ambiente **Preview** (a main em
-produção continua intocada) → Redeploy da branch.
+### 2. Decisões em aberto (bater o martelo)
 
-*As datas do seed foram estimadas na migração — os erros são esperados, não
-acidente. Alternativa: mandar as informações corretas pro Claude atualizar via API.*
+- [ ] **DEC-0019** — dados da Artemec em projeto Supabase separado (proposta).
+- [ ] **DEC-0020** — aceitar o project ref como semi-público (proposta).
 
-### 1. Links reais dos botões do rodapé  ← rápido, pode ser o primeiro
+### 3. Fechar a Fase A (visual)
 
-No Table Editor → `perfil_links`, edite as 2 linhas existentes:
-- **LinkedIn**: trocar `https://www.linkedin.com/` pela URL do SEU perfil
-  (ex.: `https://www.linkedin.com/in/seu-usuario/`)
-- **GitHub**: confirmar se `https://github.com/Kiliokatsu` é o perfil certo
+- [ ] **Revisão visual do dono** no preview da `develop` — ele avisou que há
+      tamanhos a ajustar; anotar tudo e trazer numa leva só.
+- [ ] **Calendário do GitHub na home** (espec §6.1.7): depende de criar um
+      token de leitura pública no GitHub e pô-lo como env var na Vercel.
+- [ ] **Botão "Currículo em PDF"** na Profissional: depende do arquivo existir.
+- [ ] **Env vars na Vercel** (`NEXT_PUBLIC_SUPABASE_URL`/`ANON_KEY` no ambiente
+      Preview) se quiser ver o banco real no preview da `develop`.
+- [ ] Quando o visual estiver aprovado: **PR `develop → main`** e deploy.
 
-E em `perfil` (linha única), confira o campo `email` — o botão E-mail do rodapé
-abre `mailto:` para esse endereço (hoje: vinicius.h.eng@outlook.com).
+### 4. Fase B — o motor (debate antes de código, DEC-0021)
 
-*Alternativa: me mande os links na próxima sessão que eu atualizo pela API.*
+A espec e o schema estão em `../Reconstrução/`. O schema foi validado no
+PGlite (15 sondas ok), mas carrega **seis achados que precisam de decisão um
+a um** antes de virar migration:
 
-### 2. Vercel — ligar o banco no site publicado
+1. `authenticated` = dono absoluto (abre mão do `is_admin()`) — recomendação:
+   manter a tabela `admins`;
+2. post `publicado` sem `publicado_em` fica invisível em silêncio — falta um
+   CHECK;
+3. bucket `imagens-posts`: herdar a lição da DEC-0017 (upload é publicação;
+   listagem só admin);
+4. sem GRANTs explícitos — o "dois portões" morreu no schema novo;
+5. lacunas espec×schema: nº sequencial do registro (o carimbo), e a origem da
+   métrica "builds no mês";
+6. miudezas: tags 100% públicas, webhook do n8n sem segredo, `tema` sem limite.
 
-(Você decidiu fazer junto com o merge — anotado.)
-Settings → Environment Variables → adicionar `NEXT_PUBLIC_SUPABASE_URL` e
-`NEXT_PUBLIC_SUPABASE_ANON_KEY` (valores em Settings → API do Supabase) → Redeploy.
-Sem isso o site publicado roda em modo demonstração.
+Escopo da Fase B: tabela `ideias` + Database Webhooks + n8n na VPS (a criar) +
+pg_cron + editor com autosave/preview + **troca do login para e-mail/senha**
+(um usuário só, cadastrado à mão, signup desligado) + `/api/revalidar`.
 
-### 3. Login no site para escrever, aprovar e editar (fase 2 — o painel)
+### 5. Faxinas sem urgência
 
-É a DEC-012 do pacote: uma tela protegida onde você edita texto, aprova/agenda/
-publica e mantém o currículo. O caminho, quando chegar a hora:
-
-1. Supabase → Authentication → Providers → habilitar **GitHub** (pede criar um
-   OAuth App no GitHub — o assistente do Supabase dá o passo a passo).
-2. Construir o painel na branch (trabalho meu, com DEC — o desenho já existe).
-3. Fazer login uma vez com sua conta GitHub, copiar seu `user_id` em
-   Authentication → Users, e inserir em `admins` pelo Studio. **Essa linha é o
-   que te autoriza a escrever pelo site** — sem ela, login nenhum edita nada.
-
-### 4. Os 6–8 posts (DEC-011 — o que destrava o merge)
-
-Barra mínima combinada: 3 em Tecnologia, 2 em Profissional, 2 em Pessoal.
-Matéria-prima que já existe: as 83 mil palavras do Wispr Flow, a pasta
-`Registro/`, e dois candidatos prontos anotados nas decisões: "GRANT e POLICY
-são dois portões" (DEC-017) e "o admin não via o próprio rascunho" (DEC-022).
-
-### 5. Merge `reconstrucao-kiliokatsu` → `main`
-
-Quando os posts existirem: merge + passo 2 acima + conferir o domínio. A troca
-é uma só, sem site fora do ar.
-
-### 6. Manutenção de segurança (sem urgência, com prazo)
-
-- **Token de acesso** (`sbp_...`) expira **~10/09/2026** — antes disso, decidir
-  como seguimos (novo token ou outro método).
-- **Trocar a senha do banco** quando as integrações acabarem (Settings →
-  Database → Reset password) — ela viajou pela nossa conversa.
-- **`ECC-main/` (68 MB)** na raiz do vault: instalador já aplicado, apagável —
-  aguardando sua palavra.
-- **Certificados**: conferir cada PDF (CPF!) ANTES de subir pro Storage —
-  balde público significa que subir = publicar (DEC-023).
-
-### 7. Modo caos — suas ideias novas (DEC-004)
-
-O dragão saiu (DEC-0008). O fluxo combinado: você cola em
-`prototipo-dragao/entrega/Decisoes/01_Referencias_Animacao.md` a URL do site
-que tem o efeito que você quer + qual elemento exatamente; eu devolvo técnica,
-custo e comportamento em celular, e a gente decide olhando.
+- [ ] Apagar as branches já mergeadas no GitHub e localmente
+      (`git branch -d` + `git fetch --prune`).
+- [ ] `npm audit fix` (cadeia postcss→nanoid, LOW).
+- [ ] Header `Strict-Transport-Security` no `next.config.ts` (MEDIUM da
+      auditoria) — ou confirmar que a Vercel já o injeta no domínio final.
+- [ ] `ECC-main/` (68 MB) na raiz do vault: instalador já aplicado, apagável.
+- [ ] Débitos registrados na DEC-0018: casts de leitura em `lib/consultas.ts`
+      sem validação de runtime; estado "não-alistado" indistinto de falha de
+      rede no console.

@@ -22,7 +22,7 @@ export function Etiqueta({ slug, children }: { slug?: string; children: React.Re
 /** Nome do portal em mono minúsculo, como nas telas aprovadas. */
 export function SeloPortal({ portal }: { portal: Portal }) {
   return (
-    <span data-campo="portal" className="font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-acento">
+    <span className="font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-acento">
       {portal}
     </span>
   );

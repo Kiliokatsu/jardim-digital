@@ -142,6 +142,25 @@ await ok("migration 0001 roda inteira, sem erro", async () => {
   await db.exec(semPgcrypto);
 });
 
+await ok("migration 0003 roda inteira, sem erro", async () => {
+  const sql = await readFile(
+    new URL("../supabase/migrations/0003_automacao.sql", import.meta.url),
+    "utf8",
+  );
+  await db.exec(sql);
+});
+
+// a 0004 (Storage) não roda aqui — mesma razão da 0002: PGlite não tem
+// o schema `storage` do Supabase. Ela é validada no ambiente real.
+
+await ok("migration 0005 roda inteira, sem erro", async () => {
+  const sql = await readFile(
+    new URL("../supabase/migrations/0005_projetos.sql", import.meta.url),
+    "utf8",
+  );
+  await db.exec(sql);
+});
+
 await ok("seed.sql roda inteiro, sem erro", async () => {
   const sql = await readFile(new URL("../supabase/seed.sql", import.meta.url), "utf8");
   await db.exec(sql);
@@ -154,6 +173,24 @@ await ok("seed.sql é idempotente (roda duas vezes sem duplicar)", async () => {
   igual(posts.rows[0].n, 3, "posts após a segunda rodada do seed");
   const links = await db.query("select count(*)::int as n from perfil_links");
   igual(links.rows[0].n, 2, "perfil_links após a segunda rodada do seed");
+});
+
+await ok("projetos (0005): anon não vê invisível e não escreve", async () => {
+  await db.exec(
+    "insert into projetos (nome, visivel) values ('Sistema oculto', false)",
+  );
+  const lidos = await como("anon", null, () =>
+    db.query("select count(*)::int as n from projetos where nome = 'Sistema oculto'"),
+  );
+  igual(lidos.rows[0].n, 0, "projeto invisível lido pelo anônimo");
+  try {
+    await como("anon", null, () =>
+      db.exec("insert into projetos (nome) values ('intruso')"),
+    );
+    throw new Error("INSERT do anon em projetos foi ACEITO");
+  } catch (e) {
+    if (!/permission denied|row-level security/i.test(e.message)) throw e;
+  }
 });
 
 /* ─────────────────────── 2. estrutura de segurança ─────────────────────── */
@@ -170,13 +207,15 @@ await ok("RLS está ligada em TODAS as tabelas do schema public", async () => {
   }
 });
 
-await ok("GRANT existe: anon lê as 9 tabelas públicas e não escreve nenhuma", async () => {
+await ok("GRANT existe: anon lê as 10 tabelas públicas e não escreve nenhuma", async () => {
+  // 9 do v3 (0001) + projetos (0005). As tabelas da automação (0003) e
+  // admins ficam DE FORA de propósito: anon não tem nem o portão 1 nelas.
   const leitura = await db.query(`
     select count(distinct table_name)::int as n
       from information_schema.role_table_grants
      where grantee = 'anon' and table_schema = 'public' and privilege_type = 'SELECT'
   `);
-  igual(leitura.rows[0].n, 9, "tabelas com SELECT pro anon (admins fica de fora)");
+  igual(leitura.rows[0].n, 10, "tabelas com SELECT pro anon (admins e automação de fora)");
 
   const escrita = await db.query(`
     select count(*)::int as n
@@ -194,7 +233,8 @@ await ok("GRANT existe: authenticated tem escrita (o portão 2 é a policy)", as
      where grantee = 'authenticated' and table_schema = 'public'
        and privilege_type = 'INSERT'
   `);
-  igual(r.rows[0].n, 9, "tabelas com INSERT pro authenticated");
+  // 9 do v3 + pautas e divulgacoes (0003) + projetos (0005)
+  igual(r.rows[0].n, 12, "tabelas com INSERT pro authenticated");
 });
 
 /* ────────────── 3. fixtures: o que o público NÃO deve ver ────────────── */

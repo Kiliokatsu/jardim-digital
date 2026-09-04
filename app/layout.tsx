@@ -1,17 +1,25 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import { Fraunces, IBM_Plex_Mono, Inter } from "next/font/google";
 import "./globals.css";
 
 /* Fontes via next/font: hospedadas no próprio domínio no build, sem requisição
-   para terceiro em tempo de execução (DEC-024). O subconjunto é o `latin` — o
-   `latin-ext` sozinho não tem A–Z e a fonte "carrega" sem desenhar nada. */
+   para terceiro em tempo de execução. A tríade da v2 (DEC-0021):
+   Fraunces é a voz (títulos e corpo de leitura, com a itálica da assinatura),
+   Inter é a interface, IBM Plex Mono é o metadado. */
+const fonteDisplay = Fraunces({
+  subsets: ["latin"],
+  style: ["normal", "italic"],
+  variable: "--fonte-display",
+  display: "swap",
+});
 const fonteTexto = Inter({
   subsets: ["latin"],
   variable: "--fonte-texto",
   display: "swap",
 });
-const fonteMono = JetBrains_Mono({
+const fonteMono = IBM_Plex_Mono({
   subsets: ["latin"],
+  weight: ["400", "500", "600"],
   variable: "--fonte-mono",
   display: "swap",
 });
@@ -42,8 +50,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: dark)", color: "#0B1220" },
-    { media: "(prefers-color-scheme: light)", color: "#F7F8FB" },
+    { media: "(prefers-color-scheme: dark)", color: "#09090B" },
+    { media: "(prefers-color-scheme: light)", color: "#FAF8F5" },
   ],
 };
 
@@ -59,18 +67,16 @@ const PESSOA_JSON_LD = JSON.stringify({
   address: { "@type": "PostalAddress", addressLocality: "Goiânia", addressRegion: "GO" },
 });
 
-/* Restaura tema, persona e Modo Engenheiro ANTES da primeira pintura.
-   Num efeito de React a página nasceria no tema errado e piscaria pro certo.
-   Contrato de atributos (DEC-003-b): data-tema escuro|claro, data-persona
-   normal|caos, data-engenheiro 0|1 — o CSS e as Chaves seguem estes nomes. */
-const RESTAURA_PREFERENCIAS = `
+/* Restaura o tema ANTES da primeira pintura — num efeito de React a página
+   nasceria no tema errado e piscaria pro certo. Primeiro acesso respeita o
+   prefers-color-scheme do sistema (espec v2 §3); depois vale a escolha salva.
+   O caos saiu do contrato (DEC-0021): só data-tema resta no <html>. */
+const RESTAURA_TEMA = `
 (function(){
   try {
-    var r = document.documentElement;
-    var g = function(k, padrao) { return localStorage.getItem(k) || padrao; };
-    r.setAttribute('data-tema', g('tema', 'escuro'));
-    r.setAttribute('data-persona', g('persona', 'normal'));
-    r.setAttribute('data-engenheiro', g('engenheiro', '0'));
+    var salvo = localStorage.getItem('tema');
+    var sistema = window.matchMedia('(prefers-color-scheme: light)').matches ? 'claro' : 'escuro';
+    document.documentElement.setAttribute('data-tema', salvo || sistema);
   } catch (e) {}
 })();
 `;
@@ -80,13 +86,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="pt-BR"
       data-tema="escuro"
-      data-persona="normal"
-      data-engenheiro="0"
-      className={`${fonteTexto.variable} ${fonteMono.variable}`}
+      className={`${fonteDisplay.variable} ${fonteTexto.variable} ${fonteMono.variable}`}
       suppressHydrationWarning
     >
       <head>
-        <script dangerouslySetInnerHTML={{ __html: RESTAURA_PREFERENCIAS }} />
+        <script dangerouslySetInnerHTML={{ __html: RESTAURA_TEMA }} />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: PESSOA_JSON_LD }}

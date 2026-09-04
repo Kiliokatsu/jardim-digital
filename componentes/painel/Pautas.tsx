@@ -30,6 +30,10 @@ const FORMATOS = [
 type Formato = (typeof FORMATOS)[number];
 const PORTAIS: Portal[] = ["tecnologia", "pessoal", "profissional"];
 
+/* menos que isso não é um tema, é uma palavra solta — o agente redator
+   não tem o que obedecer */
+const TEMA_MINIMO = 5;
+
 const ROTULO_STATUS: Record<string, string> = {
   aguardando: "aguardando executor",
   gerando: "gerando…",
@@ -54,7 +58,12 @@ export function Pautas() {
       .select("id, tema, portal, formato, status, erro, criado_em")
       .order("criado_em", { ascending: false })
       .returns<Pauta[]>();
-    if (!error) setPautas(data ?? []);
+    if (error) {
+      // erro calado aqui viraria "nenhuma registrada" — uma mentira (DEC-0018)
+      setAviso(`a lista de pautas não carregou: ${error.message}`);
+      return;
+    }
+    setPautas(data ?? []);
   }, []);
 
   useEffect(() => {
@@ -68,7 +77,7 @@ export function Pautas() {
   const registrar = useCallback(async () => {
     const sb = supabasePainel();
     if (!sb) return;
-    if (tema.trim().length < 5) {
+    if (tema.trim().length < TEMA_MINIMO) {
       setAviso("descreva o tema com pelo menos uma frase.");
       return;
     }

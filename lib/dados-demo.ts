@@ -1,6 +1,6 @@
 import type {
   Certificado, Etiqueta, Experiencia, Formacao, Habilidade,
-  Perfil, PerfilLink, Post,
+  Perfil, PerfilLink, Post, Projeto,
 } from "@/lib/tipos";
 
 /* Espelho do supabase/seed.sql em memória, pra que `npm run dev` mostre o site
@@ -108,19 +108,18 @@ export async function enviar(para: string, assunto: string, html: string) {
 
 Repare no \`console.info\` com o \`messageId\`. Isso não estava no código antigo, e foi o que mais me ajudou depois: quando um cliente diz que não recebeu, eu tenho o número do envio para procurar no painel do provedor. Sem isso, a conversa vira "mandei sim" contra "não chegou".
 
-## O que eu ganhei
-
-- Fila no provedor. Disparo em lote parou de ser problema de código.
-- Custo previsível na faixa de volume em que eu de fato estou.
-- Rastreabilidade: agora eu sei o número de cada envio.
-
-## O que eu perdi
+## O que eu ganhei e o que eu perdi
 
 E essa é a parte que quase ninguém escreve, então vai completa:
 
-- A documentação do Brevo é pior. Levei uma tarde para achar a forma certa de mandar o remetente.
+\`\`\`ganhei-perdi
++ Fila no provedor. Disparo em lote parou de ser problema de código.
++ Custo previsível na faixa de volume em que eu de fato estou.
++ Rastreabilidade: agora eu sei o número de cada envio.
+- A documentação do Brevo é pior. Levei uma tarde para achar o remetente certo.
 - O painel é mais pesado e tem muita coisa de marketing que eu não uso.
-- Perdi um dia de trabalho na troca. Um dia que não virou funcionalidade nenhuma para o cliente.
+- Um dia de trabalho na troca, que não virou funcionalidade nenhuma para o cliente.
+\`\`\`
 
 > Troca de ferramenta nunca é de graça. Quando alguém te conta só o lado bom, ou a troca foi recente demais, ou tem link de indicação no meio.
 
@@ -255,3 +254,34 @@ export const habilidadesDemo: Habilidade[] = [
    foi conferido um a um — e, com balde público, conferido ANTES do upload.
    Nenhum foi conferido ainda, então o espelho público é uma lista vazia. */
 export const certificadosDemo: Certificado[] = [];
+
+/* Sistemas entregues (DEC-0022). O primeiro é o único que não é exemplo:
+   este site existe de verdade e é o estudo de caso de si mesmo. */
+export const projetosDemo: Projeto[] = [
+  {
+    id: "pj1",
+    nome: "Jardim Digital",
+    descricao:
+      "Este site: Next.js + Supabase com RLS como fronteira real, reconstruído em público com cada decisão documentada.",
+    imagem_url: null,
+    link_url: "https://github.com/Kiliokatsu/jardim-digital",
+    stack: ["Next.js", "Supabase", "TypeScript"],
+    destaque: true,
+    visivel: true,
+    ordem: 1,
+    criado_em: "2026-08-01T12:00:00Z",
+  },
+  {
+    id: "pj2",
+    nome: "Gerador de documentos",
+    descricao:
+      "Automação que monta documento técnico a partir de dados estruturados — o clique substituiu uma tarde de copiar-e-colar.",
+    imagem_url: null,
+    link_url: null,
+    stack: ["n8n", "PostgreSQL"],
+    destaque: true,
+    visivel: true,
+    ordem: 2,
+    criado_em: "2026-08-01T12:00:00Z",
+  },
+];

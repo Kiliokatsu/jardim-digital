@@ -97,6 +97,21 @@ export type Habilidade = {
   nivel: number;
 };
 
+/** Sistema entregue — cards da home (quando destaque) e da Profissional (DEC-0022). */
+export type Projeto = {
+  id: string;
+  nome: string;
+  descricao: string | null;
+  imagem_url: string | null;
+  /** O sistema no ar, o repositório, ou um /registro/... (estudo de caso). */
+  link_url: string | null;
+  stack: string[];
+  destaque: boolean;
+  visivel: boolean;
+  ordem: number;
+  criado_em: string;
+};
+
 export type Certificado = {
   id: string;
   curso: string;
